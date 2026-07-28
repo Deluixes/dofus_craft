@@ -100,4 +100,18 @@ describe('surveyPriority', () => {
     expect(cuir.impact).toBeCloseTo(0.9, 5)
     expect(fil.impact).toBeCloseTo(0.1, 5)
   })
+
+  it('répartit limpact à parts égales même quand un seul prix manque dans la recette', () => {
+    // Cuir a un prix connu, Fil non : la recette reste incomplète, donc TOUS
+    // ses ingrédients doivent recevoir 1/n, y compris Cuir. Une variante
+    // erronée donnerait à Cuir une part proportionnelle à son propre coût
+    // (ici 1, puisqu'il serait alors le seul prix connu de la recette) et
+    // réserverait le 1/n forfaitaire au seul ingrédient non tarifé.
+    const prices = book([[2, 900, 1], [1, 5000, 1]])
+    const result = surveyPriority(index, prices, { tailleur: 200 }, NOW)
+    const cuir = result.find((e) => e.itemId === 2)!
+    const fil = result.find((e) => e.itemId === 3)!
+    expect(cuir.impact).toBeCloseTo(0.5, 10)
+    expect(fil.impact).toBeCloseTo(0.5, 10)
+  })
 })
