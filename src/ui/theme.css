@@ -352,6 +352,205 @@ body {
   );
 }
 
+/* ------------------------------------------------------------ Écran Crafts */
+
+/* Correctif de la tâche 13b : le contrat de tokens de la tâche 12 ne couvrait
+   que les six familles de sélecteurs partagés ; les classes propres à un
+   écran n'appartenaient à personne. La sémantique de couleur ([data-tone],
+   .freshness-dot[data-level]) fonctionnait déjà — il ne manquait que la mise
+   en page. Usage visé : une main, la nuit, à côté du jeu — la marge doit
+   dominer visuellement la ligne. */
+
+.crafts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+/* En-tête collant : sans fond opaque, les lignes défileraient visiblement
+   dessous. z-index minimal, suffisant face au flux normal du reste de
+   l'écran (le seul élément fixe de la coquille, .bottom-nav, est en z-index
+   10 et ne partage pas d'ancêtre empilé avec cet en-tête). */
+.crafts__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  padding-bottom: var(--k-gap-tight);
+  background: var(--k-bg);
+}
+
+/* Pastilles de filtre et boutons de tri : rangée qui défile plutôt que de
+   passer à la ligne, pour ne jamais pousser la largeur au-delà de 360 px. */
+.crafts__filters,
+.crafts__sort {
+  display: flex;
+  gap: var(--k-gap-tight);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.crafts__filters::-webkit-scrollbar,
+.crafts__sort::-webkit-scrollbar {
+  display: none;
+}
+
+/* Les boutons de ces deux groupes n'ont pas de classe propre dans le DOM
+   (voir CraftsScreen.tsx) : on les cible par descendance, comme
+   .lot-selector__option sert de modèle pour l'état pressé. */
+.crafts__filters button,
+.crafts__sort button {
+  flex: none;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), color var(--k-dur) var(--k-ease),
+    border-color var(--k-dur) var(--k-ease);
+}
+
+.crafts__filters button[aria-pressed='true'],
+.crafts__sort button[aria-pressed='true'] {
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: var(--k-accent-text);
+  font-weight: 600;
+}
+
+/* Bandeau de relevé manquant : lisible comme actionnable (bordure et fond
+   teintés d'accent) sans rivaliser avec la teinte des montants, réservée aux
+   marges. */
+.crafts__banner {
+  display: block;
+  width: 100%;
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-accent);
+  border-radius: var(--k-radius);
+  background: color-mix(in srgb, var(--k-accent) 14%, transparent);
+  color: var(--k-text);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease);
+}
+
+.crafts__banner:active {
+  background: color-mix(in srgb, var(--k-accent) 24%, transparent);
+}
+
+.crafts__empty {
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  color: var(--k-text-muted);
+  text-align: center;
+}
+
+.crafts__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Ligne de craft : bouton pleine largeur. Icône fixe, nom extensible et
+   tronqué, marge fixe alignée à droite — dans cet ordre, la marge ne peut
+   jamais être repoussée hors écran par un nom long. */
+.craft-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), border-color var(--k-dur) var(--k-ease);
+}
+
+.craft-row:active {
+  background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface));
+}
+
+.craft-row > img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+/* min-width: 0 est nécessaire dans un enfant flex pour que l'ellipse
+   fonctionne au lieu de repousser la largeur de la ligne. */
+.craft-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.9375rem;
+}
+
+.craft-row__level {
+  display: inline-block;
+  margin-left: var(--k-gap-tight);
+  padding: 1px 6px;
+  border: 1px solid var(--k-border);
+  border-radius: 999px;
+  color: var(--k-text-muted);
+  font-size: 0.6875rem;
+  vertical-align: middle;
+}
+
+.craft-row__margin {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+/* La marge domine le nom : corps large, gras, sur la règle [data-tone]
+   existante (non modifiée — seule une sélection plus spécifique ajoute ces
+   deux propriétés dans ce contexte). */
+.craft-row__margin > [data-tone] {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* Pourcentage : chasse fixe comme le montant, cf. exigence de mise en page
+   n°2 — une colonne de chiffres s'aligne d'un coup d'œil en monospace. */
+.craft-row__pct {
+  display: block;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+}
+
+.craft-row > .freshness-dot {
+  flex: none;
+}
+
 /* ------------------------------------------------------------ Interaction */
 
 :where(button, [role='tab'], a):focus-visible {
