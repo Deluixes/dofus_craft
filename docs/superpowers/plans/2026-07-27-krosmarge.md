@@ -24,6 +24,7 @@ Ces règles s'appliquent à **toutes** les tâches. Les valeurs sont reprises te
 - **Aucun backend, aucun compte, aucun appel réseau au runtime** hors chargement des icônes.
 - **Langue de l'interface : français.**
 - **Tailwind v4.3 ne prend pas de `tailwind.config.js`.** La configuration passe par le plugin Vite et `@import "tailwindcss"`. Ne pas créer de fichier de config Tailwind ni de globs `content`.
+- **Chaque tâche d'écran style ses propres classes.** Correctif apporté après la tâche 13 : le contrat de tokens de la tâche 12 ne couvre que six familles de sélecteurs partagés (`.freshness-dot`, `[data-tone]`, `.bottom-nav__tab`, `.lot-selector__option`, `.keypad__key`, `.sale-card`). Les classes propres à un écran — `.crafts*`, `.detail__*`, `.survey*`, `.sales*`, `.settings*` — n'appartiennent à personne dans la rédaction initiale, et la tâche 13 a livré un écran fonctionnel mais sans mise en page. **Toute tâche construisant un écran ajoute donc `src/ui/theme.css` à ses fichiers et y définit les règles de ses propres classes**, en n'utilisant que les custom properties existantes, sans jamais coder une couleur en dur ni retirer une règle existante.
 - Chaque tâche se termine par un commit. Message en français, préfixe conventionnel (`feat:`, `test:`, `chore:`, `docs:`).
 
 ---
