@@ -41,20 +41,42 @@
  * Le vert est réservé. La marge est l'information dominante : --k-positive est
  * la seule teinte verte de la palette, si bien qu'un chiffre rentable attire
  * l'œil avant tout le reste. La fraîcheur emprunte une famille distincte (ciel,
- * ambre, rose, ardoise) pour ne jamais concurrencer les montants.
+ * ambre, magenta, ardoise) pour ne jamais concurrencer les montants.
+ *
+ * Pourquoi --k-expired est magenta et pas rouge. Un écran de crafts affiche sur
+ * une même ligne un montant --k-negative et une pastille --k-expired. Ces deux
+ * signaux appellent des gestes opposés — abandonner le craft d'un côté, aller
+ * relever le prix de l'autre — et ne doivent donc pas se ressembler. Le rose
+ * #FB7185 d'abord retenu n'était qu'à 8,7° de teinte du rouge #F87171, pour un
+ * rapport de luminance de 1,028:1 : à la lecture rapide, deux rouges.
+ * Le reste du cercle chromatique est déjà pris — rouge par la perte, ambre par
+ * --k-stale, vert par le gain, bleu par --k-fresh, violet par --k-accent. En
+ * exigeant 40° d'écart avec la perte, l'ambre et l'accent, il ne reste que deux
+ * fenêtres : 84-215° (occupée par le vert et le bleu) et 296-320°. Le magenta
+ * n'est donc pas un goût, c'est le seul créneau libre ; 308° en est le milieu
+ * exact, à ~52° du violet comme du rouge. Aucune nuance Tailwind ne convenait
+ * (fuchsia-400 tombe à 37° de l'accent, pink-400 à 31° du rouge), d'où une
+ * valeur sur mesure.
  *
  * Contrastes WCAG 2.1 mesurés (script node, sortie reproduite dans le rapport
  * de tâche), sur --k-bg #020617 puis sur --k-surface #0E1223 :
  *   texte 19,28 / 17,77   ·  atténué 7,87 / 7,25   ·  positif 8,85 / 8,16
  *   négatif 7,29 / 6,72   ·  frais 9,42 / 8,68     ·  acceptable 12,08 / 11,14
- *   périmé 7,50 / 6,91    ·  manquant 7,87 / 7,25  ·  accent 7,41 / 6,83
+ *   périmé 9,05 / 8,34    ·  manquant 7,87 / 7,25  ·  accent 7,41 / 6,83
  * Tous dépassent le seuil AA de 4,5:1, et la plupart le seuil AAA de 7:1.
  * --k-border-strong tient 4,24 / 3,91 — au-dessus du 3:1 exigé par WCAG 1.4.11
  * pour la limite d'un contrôle, ce que --k-border (2,66 / 2,45) ne fait pas :
  * d'où deux tokens, le fin pour les séparateurs, le fort pour les boutons.
  *
+ * Les 28 paires de tons sémantiques ont été mesurées en teinte, en luminance et
+ * en ΔE2000 (table complète dans le rapport de tâche). Aucune paire de teintes
+ * saturées ne descend sous 40° d'écart ; le ΔE2000 minimal entre deux tons
+ * distincts est de 12,4, très au-dessus du seuil de discernabilité (~5).
+ * --k-neutral et --k-missing sont volontairement identiques : « montant
+ * inconnu » et « prix jamais relevé » sont le même fait, l'absence de donnée.
+ *
  * La teinte ne porte jamais seule une information. Entre elles, les quatre
- * couleurs de fraîcheur ne se séparent que de 1,05:1 à 1,61:1 en luminance :
+ * couleurs de fraîcheur ne se séparent que de 1,04:1 à 1,54:1 en luminance :
  * c'est la silhouette dessinée par Icon.tsx (disque plein, demi-disque, anneau
  * vide, point d'interrogation) qui les distingue réellement.
  */
@@ -73,10 +95,12 @@
   --k-negative: #f87171;
   --k-neutral: #94a3b8;
 
-  /* Fraîcheur — quatre teintes, doublées par les formes de FreshnessDot */
+  /* Fraîcheur — quatre teintes, doublées par les formes de FreshnessDot.
+     --k-expired est magenta et non rouge : il doit rester lisible à côté d'un
+     montant --k-negative sur la même ligne (voir l'en-tête). */
   --k-fresh: #38bdf8;
   --k-stale: #fbbf24;
-  --k-expired: #fb7185;
+  --k-expired: #f288e4;
   --k-missing: #94a3b8;
 
   /* Interaction */
