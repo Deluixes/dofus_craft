@@ -1165,6 +1165,43 @@ body {
   cursor: not-allowed;
 }
 
+/* ------------------------------------------- Accueil dune file jamais peuplée */
+
+/* Distinct de .survey-done : ce n'est pas un bilan, c'est un point de départ.
+   Même mise en page centrée, mais le texte y domine et il n'y a rien à
+   compter. Le renvoi vers les Réglages reprend le ton de .crafts__empty, qui
+   traite déjà correctement le même cas côté crafts. */
+.survey-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  text-align: center;
+}
+
+.survey-welcome h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.survey-welcome p {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.875rem;
+}
+
+.survey-welcome__search {
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
 /* ------------------------------------------------ Récapitulatif de session */
 
 .survey-done {

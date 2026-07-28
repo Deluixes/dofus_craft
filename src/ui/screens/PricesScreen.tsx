@@ -67,6 +67,10 @@ export function PricesScreen({ target, onTargetHandled }: {
     if (target !== null) { setMode('search'); setManualId(target); onTargetHandled() }
   }, [target, onTargetHandled])
 
+  // Un métier laissé à 0 dans les réglages n'est pas déclaré : il ne rend
+  // aucune recette accessible, exactement comme un métier absent de l'objet.
+  const hasDeclaredJobs = Object.values(settings.jobLevels).some((level) => (level ?? 0) > 0)
+
   const currentId = manualId ?? queue[cursor] ?? null
   const item = currentId === null ? null : catalog!.itemsById.get(currentId)
   const existing = currentId === null ? undefined : priceBook.get(currentId)
@@ -88,6 +92,25 @@ export function PricesScreen({ target, onTargetHandled }: {
     await recordPrice(currentId, Number(draft), lot)
     setRecorded((n) => n + 1)
     advance()
+  }
+
+  /*
+   * File vide n'est pas session terminée.
+   *
+   * Un nouveau joueur a `jobLevels = {}` ; aucune des 2219 recettes du
+   * catalogue n'ayant un résultat de niveau 0, l'ensemble craftable est vide,
+   * donc la file aussi, donc `cursor (0) >= queue.length (0)` — et la toute
+   * première ouverture de l'onglet Prix affichait un récapitulatif de fin de
+   * session : « 0 prix relevé · 0 crafts calculables · Aucun nouveau craft
+   * rentable cette fois. » CraftsScreen gérait déjà ce cas correctement.
+   *
+   * Le test porte sur la file elle-même et non sur `jobLevels` : une file
+   * jamais peuplée ne peut avoir été parcourue, quelle qu'en soit la raison.
+   * Le message, lui, distingue les deux causes, parce qu'elles n'appellent pas
+   * le même geste — déclarer un métier, ou attendre d'en monter un.
+   */
+  if (mode === 'guided' && queue.length === 0 && manualId === null) {
+    return <SurveyWelcome hasJobs={hasDeclaredJobs} onSearch={() => setMode('search')} />
   }
 
   if (mode === 'guided' && cursor >= queue.length && manualId === null) {
@@ -213,6 +236,34 @@ function describeAge(ms: number): string {
   if (hours < 1) return "il y a moins d'une heure"
   if (hours < 24) return `il y a ${Math.floor(hours)} h`
   return `il y a ${Math.floor(hours / 24)} j`
+}
+
+/**
+ * Accueil quand la file n'a jamais rien contenu — le premier écran qu'un
+ * nouveau joueur voit s'il ouvre l'onglet Prix avant les Réglages. Il dit ce
+ * qui manque et où le faire, jamais un bilan d'une session qui n'a pas eu lieu.
+ */
+function SurveyWelcome({ hasJobs, onSearch }: { hasJobs: boolean; onSearch: () => void }) {
+  return (
+    <section className="survey-welcome">
+      <h1>Rien à relever pour l'instant</h1>
+      {hasJobs ? (
+        <p>
+          Aucune recette n'est à la portée de tes niveaux de métier actuels.
+          Monte-les, ou relève un prix à la main par la recherche.
+        </p>
+      ) : (
+        <p>
+          Déclare tes niveaux de métier dans les Réglages : c'est ce qui
+          détermine les crafts que tu peux faire, donc les prix qui valent la
+          peine d'être relevés.
+        </p>
+      )}
+      <button type="button" className="survey-welcome__search" onClick={onSearch}>
+        Recherche libre
+      </button>
+    </section>
+  )
 }
 
 /**
