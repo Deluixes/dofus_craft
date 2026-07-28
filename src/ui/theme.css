@@ -769,6 +769,30 @@ body {
   font-size: 0.8125rem;
 }
 
+/* Pastille « simulé » à la place de la pastille de fraîcheur du prix de vente.
+   Un chiffre tapé à l'instant est parfaitement récent et parfaitement
+   hypothétique : lui donner la teinte de --k-fresh ferait passer une hypothèse
+   pour un relevé. Elle porte donc l'accent — la teinte de l'interaction, jamais
+   celle d'une donnée — comme .detail__simulated juste en dessous. */
+.detail__sim-badge {
+  flex: none;
+  padding: 1px 8px;
+  border: 1px solid var(--k-accent);
+  border-radius: 999px;
+  color: var(--k-accent);
+  font-size: 0.6875rem;
+  font-style: italic;
+}
+
+/* Ce que qualifie la pastille posée à côté de la marge nette. Passe à la ligne
+   sous le montant (flex-basis 100 % dans le `dd` en wrap), comme
+   .detail__simulated : à 360 px, la marge ne doit jamais être repoussée. */
+.detail__confidence-label {
+  flex-basis: 100%;
+  color: var(--k-text-muted);
+  font-size: 0.6875rem;
+}
+
 /* Carte de comparaison vente/brisage — même habillage que .sale-card, sans sa
    barre d'urgence, cette carte n'ayant pas de notion d'échéance. */
 .detail__breaking {

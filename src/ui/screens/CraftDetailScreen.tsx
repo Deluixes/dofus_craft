@@ -3,7 +3,7 @@ import { useAppState } from '../AppState'
 import { craftCost } from '../../domain/craftCost'
 import { craftMargin } from '../../domain/margin'
 import { unitPrice } from '../../domain/price'
-import { freshnessOf } from '../../domain/freshness'
+import { freshnessOf, worstFreshness } from '../../domain/freshness'
 import { averageJets, breakingValue } from '../../domain/breaking'
 import { createSale } from '../../domain/sale'
 import { RUNES, STAT_WEIGHTS, type RuneRef } from '../../catalog/statWeights'
@@ -78,6 +78,32 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
     return <p className="detail__empty">Objet introuvable.</p>
   }
 
+  /*
+   * Indice de confiance de la marge.
+   *
+   * L'écran Crafts affiche `craft.confidence` sur chaque ligne ; sans
+   * équivalent ici, le joueur lisait « +18 000 k (18 %) » calculé sur un prix
+   * de vente vieux de trois semaines sans qu'aucun signal ne le dise — et
+   * c'est sur cet écran qu'il s'engage en appuyant sur « J'ai crafté et mis en
+   * vente ». La règle est celle de `rankCrafts` : la marge ne vaut pas mieux
+   * que sa donnée la plus faible, ingrédients ET prix de vente confondus.
+   *
+   * Le prix de vente simulé est traité à part et non comme un relevé frais :
+   * un chiffre tapé à l'instant est parfaitement « récent » et parfaitement
+   * hypothétique. Lui donner une pastille verte reviendrait à faire passer une
+   * hypothèse pour une observation, exactement ce que cette pastille existe
+   * pour empêcher. On affiche donc « simulé » à sa place, et l'indice global
+   * ne porte alors que sur les ingrédients, ce que son libellé dit.
+   */
+  const simulating = simulated !== null
+  const ingredientsFreshness = worstFreshness(
+    recipe.ingredients.map((ing) => freshnessOf(priceBook.get(ing.itemId), now, settings.freshness)),
+  )
+  const salePriceFreshness = freshnessOf(recordedSale, now, settings.freshness)
+  const confidence = simulating
+    ? ingredientsFreshness
+    : worstFreshness([ingredientsFreshness, salePriceFreshness])
+
   return (
     <section className="detail">
       <header className="detail__header">
@@ -115,6 +141,11 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
 
         <dt>Prix de vente</dt>
         <dd>
+          {simulating ? (
+            <span className="detail__sim-badge">simulé</span>
+          ) : (
+            <FreshnessDot level={salePriceFreshness} />
+          )}
           <input
             type="number"
             inputMode="numeric"
@@ -123,7 +154,7 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
             aria-label="Prix de vente simulé"
             onChange={(e) => setSimulated(e.target.value === '' ? null : Number(e.target.value))}
           />
-          {simulated !== null && <span className="detail__simulated">simulation, non enregistrée</span>}
+          {simulating && <span className="detail__simulated">simulation, non enregistrée</span>}
         </dd>
 
         <dt>Taxe 2 %</dt>
@@ -132,7 +163,17 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
         <dt>Marge nette</dt>
         <dd>
           <KamasAmount value={margin?.net ?? null} signed />
-          {margin && <span className="detail__pct">({(margin.pct * 100).toFixed(0)} %)</span>}
+          {margin && (
+            <>
+              <span className="detail__pct">({(margin.pct * 100).toFixed(0)} %)</span>
+              <FreshnessDot level={confidence} />
+              <span className="detail__confidence-label">
+                {simulating
+                  ? 'confiance des ingrédients — prix de vente simulé'
+                  : 'confiance du calcul'}
+              </span>
+            </>
+          )}
         </dd>
       </dl>
 
