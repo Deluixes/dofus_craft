@@ -1,0 +1,283 @@
+/*
+ * Système visuel de Krosmarge
+ * ---------------------------
+ * Direction artistique issue de la skill `ui-ux-pro-max` :
+ *   · type de produit   : « Financial Dashboard » croisé « gaming companion app »
+ *   · style retenu      : « Modern Dark (Cinema Mobile) » + « Data-Dense Dashboard »
+ *   · typographie       : « Modern Dark Cinema (Inter System) », chiffres tabulaires
+ *
+ * Contexte d'usage : téléphone, la nuit, à une main, pendant une partie.
+ * Trois règles en découlent et expliquent la plupart des valeurs ci-dessous.
+ *
+ * 1. Aucun noir pur. Le #000000 provoque un maculage sur dalle OLED lors du
+ *    défilement ; le fond descend donc à #08090C et pas plus bas.
+ * 2. Le vert « argent » est réservé. La marge est l'information dominante :
+ *    --k-positive est la seule teinte verte de la palette, si bien qu'un chiffre
+ *    rentable attire l'œil avant tout le reste. La fraîcheur emprunte une
+ *    famille froide et distincte (turquoise, ambre, rose, ardoise) pour ne
+ *    jamais concurrencer les montants.
+ * 3. La teinte ne porte jamais seule une information. Les quatre niveaux de
+ *    fraîcheur sont doublés par les glyphes de FreshnessDot (● ◐ ○ ?), dont les
+ *    formes restent discernables en vision dichromatique.
+ *
+ * Contrastes vérifiés sur --k-bg (#08090C), calculés selon WCAG 2.1 :
+ *   texte 17,0:1 · atténué 7,7:1 · positif 11,4:1 · négatif 7,9:1
+ *   frais 10,7:1 · acceptable 11,9:1 · périmé 7,4:1 · manquant 6,5:1 · accent 7,1:1
+ * Tous dépassent le seuil AA de 4,5:1. L'accent a été éclairci depuis le
+ * #5E6AD2 de la base de styles, qui ne tenait que 4,2:1 en texte sur ce fond.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Fonds et texte */
+  --k-bg: #08090c;
+  --k-surface: #14161e;
+  --k-text: #ecedf1;
+  --k-text-muted: #99a1b3;
+
+  /* Sémantique des montants */
+  --k-positive: #4ade80;
+  --k-negative: #ff7b7b;
+  --k-neutral: #99a1b3;
+
+  /* Fraîcheur — quatre teintes distinctes, doublées par les glyphes de FreshnessDot */
+  --k-fresh: #2dd4bf;
+  --k-stale: #fbbf24;
+  --k-expired: #fb7185;
+  --k-missing: #8a93a6;
+
+  /* Interaction */
+  --k-accent: #8b93f0;
+  --k-accent-text: #08090c;
+  --k-border: rgba(255, 255, 255, 0.08);
+
+  /* Métrique */
+  --k-tap-min: 44px;
+  --k-radius: 16px;
+  --k-gap: 12px;
+
+  /* Support — dérivés utilisés par les règles de ce fichier uniquement */
+  --k-accent-glow: rgba(139, 147, 240, 0.18);
+  --k-font: 'Inter', -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --k-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------------------------ Base */
+
+html,
+body {
+  background: var(--k-bg);
+  color: var(--k-text);
+}
+
+body {
+  font-family: var(--k-font);
+  font-size: 16px;
+  line-height: 1.5;
+  /* Empêche l'agrandissement automatique du texte en paysage sur iOS. */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ------------------------------------------------------- Coquille de page */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--k-bg);
+}
+
+.app__main {
+  flex: 1;
+  padding: var(--k-gap);
+  /* Réserve la hauteur de la barre d'onglets, encoche du téléphone comprise,
+     pour que le dernier élément d'une liste reste atteignable. */
+  padding-bottom: calc(var(--k-tap-min) + var(--k-gap) * 3 + env(safe-area-inset-bottom, 0px));
+}
+
+.app-loading,
+.app-error {
+  padding: calc(var(--k-gap) * 2);
+  text-align: center;
+}
+
+.app-loading {
+  color: var(--k-text-muted);
+}
+
+.app-error {
+  color: var(--k-negative);
+}
+
+/* ------------------------------------------------- Barre d'onglets basse */
+
+.bottom-nav {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 10;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--k-surface);
+  border-top: 1px solid var(--k-border);
+}
+
+.bottom-nav__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--k-tap-min);
+  padding: 4px;
+  border: 0;
+  border-radius: calc(var(--k-radius) - 4px);
+  background: transparent;
+  color: var(--k-text-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  /* Supprime le délai de 300 ms du tap mobile. */
+  touch-action: manipulation;
+  transition: background-color 160ms var(--k-ease), color 160ms var(--k-ease);
+}
+
+.bottom-nav__tab > span:first-child {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.bottom-nav__tab[aria-selected='true'] {
+  background: var(--k-accent-glow);
+  color: var(--k-accent);
+}
+
+/* ------------------------------------------------- Fraîcheur des données */
+
+.freshness-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1em;
+  font-size: 0.875rem;
+  line-height: 1;
+  /* Le glyphe est petit : la graisse compense pour rester lisible de nuit. */
+  font-weight: 700;
+}
+
+.freshness-dot[data-level='fresh'] { color: var(--k-fresh); }
+.freshness-dot[data-level='stale'] { color: var(--k-stale); }
+.freshness-dot[data-level='expired'] { color: var(--k-expired); }
+.freshness-dot[data-level='missing'] { color: var(--k-missing); }
+
+/* ---------------------------------------------------------- Montants */
+
+/* Les chiffres tabulaires alignent les colonnes de kamas d'une ligne à
+   l'autre : une marge se compare d'un coup d'œil, sans lire les chiffres. */
+[data-tone] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  white-space: nowrap;
+}
+
+[data-tone='positive'] { color: var(--k-positive); }
+[data-tone='negative'] { color: var(--k-negative); }
+[data-tone='neutral'] { color: var(--k-neutral); }
+
+/* --------------------------------------------------- Sélecteur de lot */
+
+.lot-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.lot-selector__option {
+  flex: 1;
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 160ms var(--k-ease), color 160ms var(--k-ease);
+}
+
+.lot-selector__option[aria-pressed='true'] {
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: var(--k-accent-text);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------- Pavé numérique */
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.keypad__key {
+  /* Saisie à une main : une touche vaut au moins une fois et demie la cible
+     tactile minimale, l'erreur de frappe coûtant ici un prix faux. */
+  min-height: calc(var(--k-tap-min) * 1.5);
+  border: 1px solid var(--k-border);
+  border-radius: calc(var(--k-radius) - 4px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 100ms var(--k-ease), background-color 100ms var(--k-ease);
+}
+
+.keypad__key:active {
+  transform: scale(0.97);
+  background: var(--k-accent-glow);
+}
+
+/* --------------------------------------------------------- Carte de vente */
+
+.sale-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-left: 3px solid transparent;
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+/* L'urgence se lit à la barre latérale autant qu'à la couleur : une vente qui
+   expire bientôt garde un repère de forme, pas seulement de teinte. */
+.sale-card[data-urgent='true'] {
+  border-left-color: var(--k-expired);
+  background: linear-gradient(90deg, rgba(251, 113, 133, 0.1), var(--k-surface) 40%);
+}
+
+/* ------------------------------------------------------------ Interaction */
+
+:where(button, [role='tab'], a):focus-visible {
+  outline: 2px solid var(--k-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
