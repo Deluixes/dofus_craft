@@ -866,6 +866,333 @@ body {
   cursor: not-allowed;
 }
 
+/* ------------------------------------------------------------ Écran Prix */
+
+/* Tâche 15. Le pavé numérique (.keypad, .keypad__key) fait déjà partie du
+   contrat de tokens partagé depuis la tâche 12 ; le reste de cet écran —
+   file guidée, recherche libre, récapitulatif de fin de session — n'avait
+   pas de propriétaire avant cette tâche, cf. l'amendement aux contraintes
+   globales du plan. Usage visé : une main, debout à l'HDV, entre deux
+   combats. Chaque bouton vaut au moins --k-tap-min ; aucune règle ne code de
+   teinte en dur, tout passe par les tokens ou par [data-tone]. */
+
+.survey {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+.survey__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+}
+
+.survey__modes {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+/* Mêmes proportions que .crafts__filters button — bascule de mode, pas un
+   filtre, mais le même geste (pastille pressée = état actif). */
+.survey__mode-btn {
+  flex: none;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), color var(--k-dur) var(--k-ease),
+    border-color var(--k-dur) var(--k-ease);
+}
+
+.survey__mode-btn[aria-pressed='true'] {
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: var(--k-accent-text);
+  font-weight: 600;
+}
+
+/* Compteur x / y de la file guidée : chasse fixe, comme toute donnée
+   chiffrée (cf. l'en-tête du fichier). */
+.survey__progress {
+  flex: none;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+.survey__search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+}
+
+.survey__search-input {
+  width: 100%;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+}
+
+.survey__search-input::placeholder {
+  color: var(--k-text-muted);
+}
+
+/* Liste de résultats : défilement vertical propre, jamais horizontal — la
+   largeur reste celle de l'écran, cf. contrainte des 360 px. */
+.survey__search-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  max-height: 40vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.survey__search-result {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.survey__search-result > img {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: calc(var(--k-radius) - 12px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+/* min-width: 0 permet à l'ellipse de jouer dans ce conteneur flex, comme
+   .craft-row__name. */
+.survey__search-result-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+/* Fiche de l'objet en cours : centrée, l'image et le nom d'abord, le dernier
+   relevé ensuite — c'est ce que le joueur vérifie avant de taper un prix. */
+.survey__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  text-align: center;
+}
+
+.survey__item > img {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  object-fit: contain;
+}
+
+.survey__item h1 {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.survey__previous {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.survey__previous-value {
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* « Jamais relevé » : même sémantique que .detail__estimate — une absence de
+   donnée, pas un chiffre sur lequel s'engager, donc pas de chasse fixe. */
+.survey__previous-empty {
+  font-style: italic;
+}
+
+/* Saisie en cours : le plus gros corps de texte de l'écran, la donnée que le
+   joueur vient de taper doit se relire d'un coup d'œil avant de valider. */
+.survey__draft {
+  display: block;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.survey__actions {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+.survey__skip,
+.survey__submit {
+  flex: 1;
+  min-height: var(--k-tap-min);
+  border-radius: calc(var(--k-radius) - 6px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), opacity var(--k-dur) var(--k-ease);
+}
+
+.survey__skip {
+  border: 1px solid var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+}
+
+.survey__submit {
+  border: 1px solid var(--k-accent);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+}
+
+/* Grisé plutôt que masqué, même logique que .detail__list-sale > button —
+   le joueur voit que l'action existe et pourquoi elle attend une saisie. */
+.survey__submit:disabled {
+  border-color: var(--k-border-strong);
+  background: var(--k-border);
+  color: var(--k-text-muted);
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------ Récapitulatif de session */
+
+.survey-done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  padding: var(--k-gap);
+  text-align: center;
+}
+
+.survey-done h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.survey-done h2 {
+  margin: var(--k-gap-tight) 0 0;
+  font-size: 1rem;
+  color: var(--k-positive);
+}
+
+.survey-done__empty {
+  color: var(--k-text-muted);
+}
+
+/* Crafts nommés plutôt qu'un simple compteur : nom tronqué à gauche, marge
+   alignée à droite, comme .craft-row__margin — c'est la ligne qui donne
+   envie de revenir demain. */
+.survey-done__unlocked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.survey-done__unlocked li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-row-h);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.survey-done__unlocked-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.survey-done__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin-top: var(--k-gap-tight);
+}
+
+.survey-done__restart,
+.survey-done__search {
+  min-height: var(--k-tap-min);
+  border-radius: calc(var(--k-radius) - 6px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.survey-done__restart {
+  border: 1px solid var(--k-accent);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+}
+
+.survey-done__search {
+  border: 1px solid var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text);
+}
+
 /* ------------------------------------------------------------ Interaction */
 
 :where(button, [role='tab'], a):focus-visible {
