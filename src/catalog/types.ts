@@ -1,14 +1,17 @@
 export type Job =
   | 'tailleur' | 'bijoutier' | 'cordonnier' | 'forgeron' | 'sculpteur'
   | 'faconneur' | 'bricoleur' | 'alchimiste' | 'paysan' | 'mineur'
-  | 'bucheron' | 'pecheur' | 'chasseur' | 'inconnu'
+  | 'bucheron' | 'pecheur' | 'chasseur' | 'eleveur' | 'boucher'
+  | 'poissonnier' | 'boulanger' | 'inconnu'
 
 export const JOB_LABELS: Record<Job, string> = {
   tailleur: 'Tailleur', bijoutier: 'Bijoutier', cordonnier: 'Cordonnier',
   forgeron: 'Forgeron', sculpteur: 'Sculpteur', faconneur: 'Façonneur',
   bricoleur: 'Bricoleur', alchimiste: 'Alchimiste', paysan: 'Paysan',
   mineur: 'Mineur', bucheron: 'Bûcheron', pecheur: 'Pêcheur',
-  chasseur: 'Chasseur', inconnu: 'Métier inconnu',
+  chasseur: 'Chasseur', eleveur: 'Éleveur', boucher: 'Boucher',
+  poissonnier: 'Poissonnier', boulanger: 'Boulanger',
+  inconnu: 'Métier inconnu',
 }
 
 export interface StatRange { name: string; min: number; max: number }
