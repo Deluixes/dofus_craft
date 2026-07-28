@@ -101,6 +101,31 @@ describe('surveyPriority', () => {
     expect(fil.impact).toBeCloseTo(0.1, 5)
   })
 
+  it('exclut un ingrédient absent du catalogue', () => {
+    // Régression : 147 ingrédients du dataset Touch référencent un identifiant
+    // sans objet correspondant. Empilés dans la file, ils y arrivaient sans nom
+    // ni image — l'écran de relevé n'avait alors plus rien à afficher, ni
+    // aucun bouton, et le joueur s'y retrouvait enfermé. Sur le catalogue réel,
+    // l'item 3955 occupait la position 10 sur 12 pour un Alchimiste maxé.
+    const withOrphan = buildCatalogIndex({
+      version: 't',
+      items: [
+        { id: 1, name: 'Chapeau', type: 'Chapeau', level: 20, imgUrl: '', stats: [] },
+        { id: 2, name: 'Cuir', type: 'Peau', level: 1, imgUrl: '', stats: [] },
+      ],
+      recipes: [
+        {
+          resultItemId: 1,
+          job: 'tailleur',
+          ingredients: [{ itemId: 2, quantity: 3 }, { itemId: 3955, quantity: 1 }],
+        },
+      ],
+    })
+    const ids = surveyPriority(withOrphan, new Map(), { tailleur: 200 }, NOW).map((e) => e.itemId)
+    expect(ids).toContain(2)
+    expect(ids).not.toContain(3955)
+  })
+
   it('répartit limpact à parts égales même quand un seul prix manque dans la recette', () => {
     // Cuir a un prix connu, Fil non : la recette reste incomplète, donc TOUS
     // ses ingrédients doivent recevoir 1/n, y compris Cuir. Une variante

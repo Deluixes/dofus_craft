@@ -53,7 +53,18 @@ export function surveyPriority(
   const impact = new Map<number, number>()
   const recipeCount = new Map<number, number>()
 
+  /**
+   * N'entre dans la file qu'un objet réellement présent au catalogue.
+   *
+   * 147 ingrédients du dataset Dofus Touch référencent un identifiant sans
+   * objet correspondant. Un tel identifiant n'a ni nom ni image, ne peut donc
+   * jamais être relevé, et son obsolescence reste bloquée à
+   * `MISSING_OBSOLESCENCE` pendant que tous les prix relevés décroissent : il
+   * remonte mécaniquement en tête de file session après session. Le filtrer
+   * ici est la seule correction qui tienne dans la durée.
+   */
   const bump = (itemId: number, share: number) => {
+    if (!index.itemsById.has(itemId)) return
     impact.set(itemId, (impact.get(itemId) ?? 0) + share)
     recipeCount.set(itemId, (recipeCount.get(itemId) ?? 0) + 1)
   }

@@ -1067,6 +1067,22 @@ body {
   text-align: center;
 }
 
+/* Entrée de file sans objet au catalogue. Ne porte aucune teinte de montant :
+   ce n'est ni un gain ni une perte, seulement une donnée amont absente — même
+   sémantique que .detail__breaking-unconfigured, texte normal et non atténué,
+   puisque la phrase indique quoi faire (« Passe au suivant »). Le bouton
+   « Passer » reste rendu sous ce message, hors du bloc conditionnel. */
+.survey__unknown {
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 .survey__actions {
   display: flex;
   gap: var(--k-gap-tight);

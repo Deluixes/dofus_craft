@@ -159,7 +159,7 @@ export function PricesScreen({ target, onTargetHandled }: {
         </div>
       )}
 
-      {item && (
+      {item ? (
         <>
           <div className="survey__item">
             <img src={item.imgUrl} alt="" width={64} height={64} />
@@ -181,14 +181,28 @@ export function PricesScreen({ target, onTargetHandled }: {
           <output className="survey__draft">{draft === '' ? '—' : formatKamas(Number(draft))}</output>
 
           <NumericKeypad onKey={(key) => setDraft((d) => applyKey(d, key))} />
+        </>
+      ) : currentId !== null && (
+        <p className="survey__unknown">
+          Objet inconnu du catalogue (identifiant {currentId}). Passe au suivant.
+        </p>
+      )}
 
-          <div className="survey__actions">
-            <button type="button" className="survey__skip" onClick={advance}>Passer</button>
+      {/*
+        Bretelles du correctif d'orphelin : « Passer » vit hors du bloc `item`,
+        si bien qu'aucune entrée de file ne peut plus être un cul-de-sac, quelle
+        qu'en soit la cause. « Valider » reste conditionné à l'objet — valider
+        un identifiant sans objet enregistrerait un prix inexploitable.
+      */}
+      {currentId !== null && (
+        <div className="survey__actions">
+          <button type="button" className="survey__skip" onClick={advance}>Passer</button>
+          {item && (
             <button type="button" className="survey__submit" disabled={draft === ''} onClick={() => void submit()}>
               Valider
             </button>
-          </div>
-        </>
+          )}
+        </div>
       )}
     </section>
   )
