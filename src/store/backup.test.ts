@@ -49,6 +49,24 @@ describe('importBackup', () => {
     })).rejects.toThrow(/version/i)
   })
 
+  it('ne détruit rien quand la version est refusée', async () => {
+    // L'import est destructif : il vide les quatre tables avant d'écrire. Le
+    // test ci-dessus n'assertait que le rejet de la promesse, sans rien seeder
+    // — l'ordre des opérations n'était donc correct que par lecture du code, et
+    // c'est le seul chemin capable d'effacer l'intégralité des relevés du
+    // joueur, c'est-à-dire tout son investissement dans l'outil.
+    const prices = makePriceRepository(db)
+    await prices.record({ itemId: 42, kamas: 7777, lotSize: 1, observedAt: 1000 })
+
+    await expect(importBackup(db, {
+      version: 999,
+      currentPrices: [{ itemId: 5, kamas: 100, lotSize: 1, observedAt: 1000 }],
+      priceHistory: [], sales: [], settings: DEFAULT_SETTINGS,
+    })).rejects.toThrow(/version/i)
+
+    expect((await prices.loadPriceBook()).get(42)?.kamas).toBe(7777)
+  })
+
   it('restaure les réglages', async () => {
     await importBackup(db, {
       version: BACKUP_VERSION, currentPrices: [], priceHistory: [], sales: [],

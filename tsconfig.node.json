@@ -19,5 +19,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts"]
+  // `tests/` regroupe les tests qui auditent des fichiers sources comme du
+  // texte : ils ont besoin des types Node, que tsconfig.app.json n'expose pas.
+  "include": ["vite.config.ts", "tests"]
 }
