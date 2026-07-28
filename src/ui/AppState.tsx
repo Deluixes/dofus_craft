@@ -26,6 +26,7 @@ interface AppStateValue {
   saveSettings(next: AppSettings): Promise<void>
   addSale(sale: Sale): Promise<void>
   refreshSales(): Promise<void>
+  closeSale(id: number, status: 'sold' | 'returned'): Promise<void>
 }
 
 const Ctx = createContext<AppStateValue | null>(null)
@@ -76,6 +77,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setSaleList(await sales.all())
     },
     async refreshSales() {
+      setSaleList(await sales.all())
+    },
+    async closeSale(id, status) {
+      await sales.close(id, status, Date.now())
       setSaleList(await sales.all())
     },
   }

@@ -1193,6 +1193,240 @@ body {
   color: var(--k-text);
 }
 
+/* ------------------------------------------------------------ Écran Ventes */
+
+/* Tâche 16. Le contrat de tokens couvrait déjà .sale-card et son état
+   [data-urgent='true'] (tâche 12) ; cet écran lui donne son contenu et sa
+   mise en page, plus l'historique des ventes conclues. Usage visé : le joueur
+   revient régulièrement vérifier ce qui traîne encore à l'HDV — la carte
+   urgente doit se repérer sans lire chaque ligne, et une vente conclue doit
+   afficher son vrai profit (figé sur le coût de production à la mise en
+   vente), jamais un chiffre recalculé aux prix du jour. */
+
+.sales {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+/* Même grille à deux colonnes que .detail__totals : les deux chiffres qui
+   résument l'écran avant le détail ligne par ligne. */
+.sales__summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--k-gap-tight) var(--k-gap);
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.sales__summary dt {
+  min-width: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.sales__summary dd {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+}
+
+.sales__summary dd > [data-tone] {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.sales__heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sales__empty {
+  margin: 0;
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  color: var(--k-text-muted);
+  text-align: center;
+}
+
+.sales__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* .sale-card fournit déjà la carte (padding, bordures, état [data-urgent])
+   depuis la tâche 12 ; les trois rangées ci-dessous — vignette/nom/échéance,
+   quantité/prix, actions — sont propres à cet écran. */
+.sale-card__main {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+}
+
+.sale-card__main > img {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+/* min-width: 0 permet à l'ellipse de jouer plutôt que de repousser
+   l'échéance hors de l'écran à 360 px, cf. .craft-row__name. */
+.sale-card__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.9375rem;
+}
+
+/* Chasse fixe comme toute donnée chiffrée (le compte à rebours en est une).
+   L'urgence est déjà portée par la bordure et le fond de .sale-card — cette
+   teinte double le signal, elle ne le porte pas seule. */
+.sale-card__expiry {
+  flex: none;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.sale-card__expiry[data-urgent='true'] {
+  color: var(--k-expired);
+  font-weight: 600;
+}
+
+.sale-card__details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+}
+
+.sale-card__qty {
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+.sale-card__details > [data-tone] {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.sale-card__actions {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+.sale-card__sold,
+.sale-card__returned {
+  flex: 1;
+  min-height: var(--k-tap-min);
+  border-radius: calc(var(--k-radius) - 6px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), opacity var(--k-dur) var(--k-ease);
+}
+
+.sale-card__sold {
+  border: 1px solid var(--k-accent);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+}
+
+/* Bordure neutre plutôt qu'un rouge franc : un retour n'est pas une erreur de
+   manipulation qu'on décourage, c'est un état de jeu réel que le joueur doit
+   pouvoir enregistrer aussi facilement qu'une vente. La perte qu'il implique
+   se lit dans l'historique, en toutes lettres et en kamas, pas sur ce bouton. */
+.sale-card__returned {
+  border: 1px solid var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+}
+
+.sales__history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Même schéma que .detail__line — icône fixe, nom tronqué flexible, chiffre
+   aligné à droite — mais sans bouton : une ligne d'historique ne mène nulle
+   part, elle ne fait que rappeler ce qui s'est passé. */
+.sales__history-row {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-row-h);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.sales__history-row > img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+.sales__history-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.sales__history-qty {
+  flex: none;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+}
+
+/* Une vente retournée n'est pas neutre : la taxe payée à la mise en vente
+   n'est pas remboursée. Le libellé nomme la perte et son montant exact
+   (calculé par domain/margin.ts, jamais inventé) plutôt que de la taire. */
+.sales__history-returned {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+  text-align: right;
+  white-space: normal;
+}
+
 /* ------------------------------------------------------------ Interaction */
 
 :where(button, [role='tab'], a):focus-visible {

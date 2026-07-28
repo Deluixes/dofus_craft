@@ -4,6 +4,7 @@ import { AppStateProvider, useAppState } from './AppState'
 import { CraftsScreen } from './screens/CraftsScreen'
 import { CraftDetailScreen } from './screens/CraftDetailScreen'
 import { PricesScreen } from './screens/PricesScreen'
+import { SalesScreen } from './screens/SalesScreen'
 
 function Shell() {
   const [tab, setTab] = useState<TabId>('crafts')
@@ -28,13 +29,12 @@ function Shell() {
   return (
     <div className="app">
       <main className="app__main">
-        {/* Ces deux marques-places sont remplacées par les vrais écrans
-            aux tâches 16 et 17. */}
+        {/* Cette marque-place est remplacée par le vrai écran à la tâche 17. */}
         {tab === 'crafts' && <CraftsScreen onOpen={setDetailItemId} onSurvey={() => setTab('prices')} />}
         {tab === 'prices' && (
           <PricesScreen target={priceTarget} onTargetHandled={() => setPriceTarget(null)} />
         )}
-        {tab === 'sales' && <p>Ventes</p>}
+        {tab === 'sales' && <SalesScreen />}
         {tab === 'settings' && <p>Réglages</p>}
       </main>
       <BottomNav active={tab} onChange={setTab} />
