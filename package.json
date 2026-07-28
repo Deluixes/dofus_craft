@@ -28,6 +28,7 @@
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^30.0.0",
     "oxlint": "^1.71.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.1",
     "typescript": "~6.0.2",
