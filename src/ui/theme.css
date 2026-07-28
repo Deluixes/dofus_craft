@@ -1427,6 +1427,171 @@ body {
   white-space: normal;
 }
 
+/* ---------------------------------------------------------- Écran Réglages */
+
+/* Tâche 17. Trois blocs sans propriétaire visuel avant cette tâche, cf.
+   l'amendement aux contraintes globales du plan : niveaux de métier (ce qui
+   fait apparaître un craft sur l'écran Crafts — le vrai premier contact avec
+   l'appli), association des runes (débloque le module de brisage de la tâche
+   14) et sauvegarde (l'investissement en relevés de prix du joueur). Usage
+   visé : une visite rare, posée, pas au milieu d'un combat — d'où une liste
+   verticale simple plutôt que la densité des autres écrans. */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+}
+
+.settings h2 {
+  margin: var(--k-gap) 0 0;
+  font-size: 1rem;
+}
+
+.settings h2:first-child {
+  margin-top: 0;
+}
+
+.settings__hint {
+  margin: 0 0 var(--k-gap-tight);
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Ligne « métier + niveau » : nom extensible et tronqué, champ de saisie fixe
+   à droite — même schéma que .craft-row, pour que le libellé le plus long
+   (« Poissonnier ») ne pousse jamais le champ hors de l'écran à 360 px. */
+.settings__job {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.settings__job > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.settings__job input[type='number'] {
+  flex: none;
+  width: 72px;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap-tight);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Ligne « statistique + identifiant de rune + nom résolu » : trois zones qui
+   se disputent 360 px, donc deux priorités opposées — le champ numérique est
+   fixe (un identifiant catalogue n'a pas besoin de plus de place), le nom de
+   la rune résolue est celui qui cède (min-width: 0, ellipse), pour rester
+   lisible même sur l'objet le plus long du catalogue. */
+.settings__rune {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.settings__rune > span:first-child {
+  flex: none;
+  width: 84px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.settings__rune input[type='number'] {
+  flex: none;
+  width: 72px;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap-tight);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Rune non associée : même sémantique que .detail__breaking-unconfigured
+   (texte normal, pas atténué) tant que la valeur reste 0 — c'est un état
+   actionnable, pas une simple note. Une fois résolue, le nom réel de l'objet
+   catalogue retombe sur .settings__rune-name sans distinction de teinte : le
+   fait qu'il s'affiche est déjà la confirmation attendue par le joueur. */
+.settings__rune-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+  font-style: italic;
+  text-align: right;
+}
+
+/* Boutons d'export / import : pleine largeur, empilés — aucune des deux
+   actions n'est plus fréquente que l'autre, contrairement aux paires
+   sold/returned de l'écran Ventes qui partagent une ligne. */
+.settings > button {
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-accent);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), opacity var(--k-dur) var(--k-ease);
+}
+
+/* Import de sauvegarde : geste destructif (voir la confirmation dans
+   SettingsScreen.tsx), donc pas la même teinte pleine que l'export — bordure
+   neutre plutôt que --k-accent, même logique que .sale-card__returned. */
+.settings > button + button {
+  border-color: var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text);
+}
+
+/* Retour de l'import (succès ou échec) : pas de teinte de montant, ce n'est
+   ni un gain ni une perte — texte normal, comme
+   .detail__breaking-unconfigured. */
+.settings__message {
+  margin: 0;
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-size: 0.875rem;
+}
+
 /* ------------------------------------------------------------ Interaction */
 
 :where(button, [role='tab'], a):focus-visible {
