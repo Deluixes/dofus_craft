@@ -43,10 +43,35 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
     ? craftMargin(totalCost, effectiveSalePrice)
     : null
 
+  const resolvedRunes = useMemo(() => resolveRunes(settings.runeItemIds), [settings.runeItemIds])
+
   const breaking = useMemo(
-    () => (item ? breakingValue(averageJets(item.stats), STAT_WEIGHTS, resolveRunes(settings.runeItemIds), priceBook) : null),
-    [item, priceBook, settings.runeItemIds],
+    () => (item ? breakingValue(averageJets(item.stats), STAT_WEIGHTS, resolvedRunes, priceBook) : null),
+    [item, priceBook, resolvedRunes],
   )
+
+  /**
+   * Vrai si au moins une statistique de l'objet a une rune connue du domaine
+   * (une entrée dans RUNES) mais dont l'identifiant catalogue n'a pas encore
+   * été renseigné dans les réglages (`runeItemId` toujours à `0`, valeur
+   * témoin posée par la tâche 12 et non résolue avant la tâche 17).
+   *
+   * Sans cette distinction, `breakingValue` ignore silencieusement ces
+   * statistiques (comportement voulu et fixé par ses tests — un objet
+   * n'ayant *aucune* rune correspondante n'a réellement rien à briser) et le
+   * total retombe à 0, indiscernable pour le joueur d'un vrai « ça ne
+   * rapporte rien ». Une rune relevée mais non tarifée (`runeItemId` connu,
+   * prix manquant) est un troisième état, déjà géré correctement par
+   * `total: null` + `missingRuneItemIds` — cette variable ne doit pas le
+   * recouvrir.
+   */
+  const runesUnconfigured = useMemo(() => {
+    if (!item) return false
+    const unconfiguredStatNames = new Set(
+      resolvedRunes.filter((r) => r.runeItemId === 0).map((r) => r.statName),
+    )
+    return item.stats.some((s) => unconfiguredStatNames.has(s.name))
+  }, [item, resolvedRunes])
 
   if (!item || !recipe || !cost) {
     return <p className="detail__empty">Objet introuvable.</p>
@@ -112,12 +137,20 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
 
       <section className="detail__breaking">
         <h2>Vendre ou briser</h2>
-        <p>
-          Vendre <KamasAmount value={effectiveSalePrice} /> · Briser ≈ <KamasAmount value={breaking?.total ?? null} />
-        </p>
-        <p className="detail__estimate">
-          Estimation. Le taux réel dépend de ta puissance de brisage et du focus.
-        </p>
+        {runesUnconfigured ? (
+          <p className="detail__breaking-unconfigured">
+            Runes non associées — renseigne-les dans les Réglages pour estimer le brisage.
+          </p>
+        ) : (
+          <>
+            <p>
+              Vendre <KamasAmount value={effectiveSalePrice} /> · Briser ≈ <KamasAmount value={breaking?.total ?? null} />
+            </p>
+            <p className="detail__estimate">
+              Estimation. Le taux réel dépend de ta puissance de brisage et du focus.
+            </p>
+          </>
+        )}
       </section>
 
       <section className="detail__list-sale">

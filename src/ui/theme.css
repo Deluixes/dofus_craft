@@ -798,6 +798,17 @@ body {
   font-style: italic;
 }
 
+/* État « runes non associées » : ni un montant (aucune teinte [data-tone]),
+   ni une simple note atténuée comme .detail__estimate — cette valeur n'est
+   pas une estimation imprécise, elle est absente. Le rappel d'accent (même
+   logique que .crafts__banner, tâche 13) signale que c'est actionnable
+   ailleurs (Réglages, tâche 17), sans se faire passer pour un chiffre. */
+.detail__breaking-unconfigured {
+  margin: 0;
+  color: var(--k-text);
+  font-size: 0.875rem;
+}
+
 .detail__list-sale {
   display: flex;
   flex-direction: column;
