@@ -10,6 +10,7 @@ import { RUNES, STAT_WEIGHTS, type RuneRef } from '../../catalog/statWeights'
 import { KamasAmount, formatKamas } from '../components/KamasAmount'
 import { FreshnessDot } from '../components/FreshnessDot'
 import { LotSelector } from '../components/LotSelector'
+import { describeSaleSize } from '../components/lotLabel'
 import type { LotSize } from '../../domain/types'
 
 /**
@@ -156,14 +157,24 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
       <section className="detail__list-sale">
         <h2>J'ai crafté et mis en vente</h2>
         <LotSelector value={saleLot} onChange={setSaleLot} />
+        {/*
+          `saleQty` compte des LOTS, pas des unités (voir `unitsSold` dans
+          domain/sale.ts). Le libellé le dit, et le récapitulatif ci-dessous
+          affiche le total d'unités : sans lui, « 5 » à côté d'un sélecteur
+          ×100 se lit dans les deux sens, et l'écart est d'un facteur 100 sur
+          le profit annoncé.
+        */}
+        <label className="detail__sale-label" htmlFor="detail-lot-count">Nombre de lots</label>
         <input
+          id="detail-lot-count"
           type="number"
           inputMode="numeric"
           min={1}
           value={saleQty}
           onChange={(e) => setSaleQty(Math.max(1, Number(e.target.value)))}
-          aria-label="Quantité"
+          aria-label="Nombre de lots"
         />
+        <p className="detail__sale-units">{describeSaleSize(saleQty, saleLot)}</p>
         <button
           type="button"
           disabled={cost.total === null || effectiveSalePrice === null}

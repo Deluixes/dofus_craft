@@ -824,6 +824,26 @@ body {
   font-size: 1rem;
 }
 
+/* Étiquette du champ « Nombre de lots ». Reprend la teinte atténuée et le
+   corps des étiquettes de .detail__totals dt : c'est le même rôle, nommer une
+   donnée saisie ou calculée. */
+.detail__sale-label {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Récapitulatif « 5 lots de 100 · 500 unités ». Chasse fixe comme toute donnée
+   chiffrée, mais sans teinte de montant : ce n'est pas une somme, c'est ce que
+   le joueur vient de décrire. Lève à lui seul l'ambiguïté entre un nombre de
+   lots et un nombre d'unités. */
+.detail__sale-units {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
 /* Combinateur d'enfant direct (>) : `.lot-selector` place ses propres boutons
    deux niveaux plus bas (`.detail__list-sale > .lot-selector > button`), donc
    hors de portée de ces règles. Sans le `>`, `.detail__list-sale button`
