@@ -247,14 +247,17 @@ git commit -m "chore: échafaudage Vite/React/Tailwind/Vitest et prix unitaire p
 export type Job =
   | 'tailleur' | 'bijoutier' | 'cordonnier' | 'forgeron' | 'sculpteur'
   | 'faconneur' | 'bricoleur' | 'alchimiste' | 'paysan' | 'mineur'
-  | 'bucheron' | 'pecheur' | 'chasseur' | 'inconnu'
+  | 'bucheron' | 'pecheur' | 'chasseur' | 'eleveur' | 'boucher'
+  | 'poissonnier' | 'boulanger' | 'inconnu'
 
 export const JOB_LABELS: Record<Job, string> = {
   tailleur: 'Tailleur', bijoutier: 'Bijoutier', cordonnier: 'Cordonnier',
   forgeron: 'Forgeron', sculpteur: 'Sculpteur', faconneur: 'Façonneur',
   bricoleur: 'Bricoleur', alchimiste: 'Alchimiste', paysan: 'Paysan',
   mineur: 'Mineur', bucheron: 'Bûcheron', pecheur: 'Pêcheur',
-  chasseur: 'Chasseur', inconnu: 'Métier inconnu',
+  chasseur: 'Chasseur', eleveur: 'Éleveur', boucher: 'Boucher',
+  poissonnier: 'Poissonnier', boulanger: 'Boulanger',
+  inconnu: 'Métier inconnu',
 }
 
 export interface StatRange { name: string; min: number; max: number }
@@ -413,8 +416,33 @@ export const TYPE_TO_JOB: Record<string, Job> = {
   // Bûcheron / Mineur
   'Planche': 'bucheron',
   'Substrat': 'bucheron',
+  'Bois': 'bucheron',
   'Alliage': 'mineur',
   "Pierre d'âme": 'mineur',
+  'Pierre précieuse': 'mineur',       // dofusdb, pureté 62 %
+  'Pioche': 'forgeron',               // dofusdb, pureté 100 %
+  'Outil': 'sculpteur',               // dofusdb, pureté 50 % — faible confiance, 1 recette Touch
+  'Poudre': 'paysan',                 // dofusdb, pureté 67 %
+
+  // ── Amendement post-tâche 4 ────────────────────────────────────────────
+  // 483 recettes ressortaient en 'inconnu' faute de ces types. Ni dofusdb
+  // (contenu absent de Dofus 3) ni l'encyclopédie Touch (403 Cloudflare) ne
+  // pouvaient trancher : les métiers ci-dessous ont été confirmés par le
+  // joueur, qui pratique Dofus Touch.
+  //
+  // Touch est figé sur une base 2.x ANTÉRIEURE à la fusion des métiers :
+  // Boucher, Poissonnier et Boulanger y sont encore distincts de Chasseur,
+  // Pêcheur et Paysan.
+  "Objet d'élevage": 'eleveur',
+  'Fantôme de Familier': 'eleveur',
+  'Fantôme de Montilier': 'eleveur',
+  'Viande conservée': 'boucher',
+  'Poisson vidé': 'poissonnier',
+  'Farine': 'boulanger',
+  "Potion d'oubli de métier": 'alchimiste',
+  "Potion d'oubli Percepteur": 'alchimiste',
+  'Potion Cosmétique': 'alchimiste',
+  'Potion de conquête': 'alchimiste',  // dofusdb, pureté 100 %
 }
 
 /** Métier fabriquant ce type d'objet, `inconnu` si non déterminé. */
@@ -3497,9 +3525,14 @@ import { db } from '../../store/db'
 import { exportBackup, importBackup, type BackupPayload } from '../../store/backup'
 import { RUNES } from '../../catalog/statWeights'
 
+// Tous les métiers qui fabriquent quelque chose dans le catalogue Touch.
+// Un métier laissé à 0 masque simplement ses recettes du classement — c'est
+// le comportement voulu pour un métier que le joueur ne pratique pas encore.
 const CRAFT_JOBS: Job[] = [
   'tailleur', 'bijoutier', 'cordonnier', 'forgeron',
   'sculpteur', 'faconneur', 'bricoleur', 'alchimiste',
+  'paysan', 'mineur', 'bucheron', 'pecheur', 'chasseur',
+  'eleveur', 'boucher', 'poissonnier', 'boulanger',
 ]
 
 export function SettingsScreen() {
