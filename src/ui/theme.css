@@ -551,6 +551,310 @@ body {
   flex: none;
 }
 
+/* ------------------------------------------------------ Écran Détail d'un craft */
+
+/* Comme l'écran Crafts, cet écran remplace la coquille `.app` plutôt que de
+   s'y nicher (voir App.tsx) : pas de barre d'onglets pendant qu'on consulte
+   un craft, un seul geste (←) pour y revenir. `.detail` reprend donc lui-même
+   le fond et le padding que fournissait `.app__main`. */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+  min-height: 100dvh;
+  padding: var(--k-gap);
+  padding-bottom: calc(var(--k-gap) + env(safe-area-inset-bottom, 0px));
+  background: var(--k-bg);
+}
+
+.detail__header {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+}
+
+.detail__back {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--k-tap-min);
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease);
+}
+
+.detail__back:active {
+  background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface));
+}
+
+.detail__header > img {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  object-fit: contain;
+}
+
+/* min-width: 0 permet à l'ellipse de jouer plutôt que de pousser le bouton
+   retour ou l'image hors de l'écran à 360 px, cf. .craft-row__name. */
+.detail__header h1 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.detail__empty {
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  color: var(--k-text-muted);
+  text-align: center;
+}
+
+.detail__ingredients {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Ligne d'ingrédient : bouton pleine largeur vers la saisie de son prix
+   (tâche 15). Même schéma que .craft-row — icône fixe, nom tronqué flexible,
+   montants alignés à droite — pour que la marge ne soit jamais repoussée. */
+.detail__line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease);
+}
+
+.detail__line:active {
+  background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface));
+}
+
+.detail__line > img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+.detail__line-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.detail__line-amounts {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.detail__line-qty {
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.detail__line-amounts > [data-tone] {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.detail__line > .freshness-dot {
+  flex: none;
+}
+
+/* Récapitulatif coût / vente / taxe / marge, en grille à deux colonnes : le
+   marquage <dl><dt><dd> du composant remplit naturellement la grille dans
+   l'ordre du DOM, sans changement de structure. */
+.detail__totals {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--k-gap-tight) var(--k-gap);
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.detail__totals dt {
+  min-width: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.detail__totals dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px var(--k-gap-tight);
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+}
+
+.detail__totals input[type='number'] {
+  width: 100%;
+  max-width: 140px;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap-tight);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.detail__totals input[type='number']::placeholder {
+  color: var(--k-text-muted);
+  font-family: var(--k-font-sans);
+}
+
+/* Rappel qu'un prix simulé n'a pas été enregistré : la teinte d'accent (celle
+   de l'interaction, jamais celle d'un montant) marque le texte comme un état
+   passager plutôt qu'une donnée. Passe à la ligne sous le champ (flex-basis
+   100 % dans le conteneur `dd` en wrap) pour ne jamais pousser la largeur du
+   couple prix/label au-delà de 360 px. */
+.detail__simulated {
+  flex-basis: 100%;
+  color: var(--k-accent);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.detail__pct {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Carte de comparaison vente/brisage — même habillage que .sale-card, sans sa
+   barre d'urgence, cette carte n'ayant pas de notion d'échéance. */
+.detail__breaking {
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.detail__breaking h2 {
+  margin: 0 0 var(--k-gap-tight);
+  font-size: 1rem;
+}
+
+.detail__breaking p {
+  margin: 0 0 var(--k-gap-tight);
+}
+
+/* Le brisage est une estimation, pas une donnée relevée : elle porte donc la
+   même sémantique visuelle que .detail__simulated (texte atténué, italique)
+   plutôt que la teinte d'un montant — ce n'est explicitement pas un chiffre
+   sur lequel s'engager. */
+.detail__estimate {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.detail__list-sale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.detail__list-sale h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Combinateur d'enfant direct (>) : `.lot-selector` place ses propres boutons
+   deux niveaux plus bas (`.detail__list-sale > .lot-selector > button`), donc
+   hors de portée de ces règles. Sans le `>`, `.detail__list-sale button`
+   (spécificité 0,1,1) l'aurait emporté sur `.lot-selector__option` (0,1,0) et
+   aurait cassé son style partagé pour les boutons ×1/×10/×100 de cet écran —
+   bug constaté puis corrigé pendant la vérification en navigateur de cette
+   tâche. */
+.detail__list-sale > input[type='number'] {
+  width: 100%;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail__list-sale > button {
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-accent);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: opacity var(--k-dur) var(--k-ease), background-color var(--k-dur) var(--k-ease);
+}
+
+/* Grisée plutôt que masquée : le joueur voit que l'action existe et pourquoi
+   elle est bloquée (coût ou prix manquant) sans avoir à deviner. */
+.detail__list-sale > button:disabled {
+  border-color: var(--k-border-strong);
+  background: var(--k-border);
+  color: var(--k-text-muted);
+  cursor: not-allowed;
+}
+
 /* ------------------------------------------------------------ Interaction */
 
 :where(button, [role='tab'], a):focus-visible {
