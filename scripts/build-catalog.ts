@@ -34,13 +34,37 @@ for (const recipe of recipes) {
 
 const unknownJob = recipes.filter((r) => r.job === 'inconnu').length
 
-const catalog: Catalog = { version: VERSION, items, recipes }
-mkdirSync('public', { recursive: true })
-writeFileSync(join('public', `catalog.${VERSION}.json`), JSON.stringify(catalog))
-
 console.log(`\nCatalogue ${VERSION}`)
 console.log(`  objets            : ${items.length}`)
 console.log(`  recettes          : ${recipes.length}`)
 console.log(`  métier inconnu    : ${unknownJob}`)
 console.log(`  ingrédients orphelins : ${orphans.size}`)
 if (orphans.size) console.log(`  identifiants : ${[...orphans].slice(0, 20).join(', ')}…`)
+
+/*
+ * Garde-fous. Les sources `data/dofus-touch/*.json` sont committées, mais rien
+ * n'empêche un fichier tronqué (téléchargement partiel, mauvaise fusion) de
+ * produire un catalogue amputé — et un catalogue amputé ne se voit pas : il
+ * livre une application qui démarre et affiche moins de crafts, sans jamais
+ * dire lesquels manquent. Le build doit donc s'arrêter, et non se contenter
+ * d'afficher des compteurs que personne ne lit. Les seuils sont volontairement
+ * très en dessous des volumes réels (6319 objets, 2219 recettes) : ils
+ * n'attrapent qu'une amputation franche, pas une variation de version amont.
+ */
+const MIN_ITEMS = 5000
+const MIN_RECIPES = 1500
+
+if (items.length < MIN_ITEMS || recipes.length < MIN_RECIPES) {
+  console.error(
+    `\nÉCHEC : catalogue tronqué — ${items.length} objets (minimum ${MIN_ITEMS}) et ` +
+      `${recipes.length} recettes (minimum ${MIN_RECIPES}).\n` +
+      'Vérifie que les quatre fichiers de data/dofus-touch/ sont complets. ' +
+      "Aucun catalogue n'a été écrit.",
+  )
+  process.exit(1)
+}
+
+const catalog: Catalog = { version: VERSION, items, recipes }
+mkdirSync('public', { recursive: true })
+writeFileSync(join('public', `catalog.${VERSION}.json`), JSON.stringify(catalog))
+console.log(`\nÉcrit : public/catalog.${VERSION}.json`)
