@@ -1,0 +1,1707 @@
+/*
+ * Système visuel de Krosmarge
+ * ---------------------------
+ * Direction artistique issue de la skill `ui-ux-pro-max` (v2.11.0), moteur de
+ * scoring exécuté cette fois pour de bon — la tâche 12 n'avait pas pu le
+ * lancer, faute de Python dans le PATH, et avait relu la base à la main.
+ *
+ * Réponses retenues du moteur :
+ *   · --domain color, requête « dark mode palette for financial data dashboard »
+ *       → produit « Financial Dashboard », variante sombre : fond #020617,
+ *         carte #0E1223, texte #F8FAFC, texte atténué #94A3B8, bordure #334155,
+ *         vert de positif #22C55E. Note de la base : « Dark bg + green positive
+ *         indicators ». C'est la colonne vertébrale de la palette ci-dessous.
+ *   · --domain style, requête « data-dense dashboard dark mode »
+ *       → « Data-Dense Dashboard » (WCAG AA, perf excellente) : padding minimal
+ *         de 8-12 px, hauteur de ligne 36 px, typographie dense mais lisible.
+ *       → « Dark Mode (OLED) » (WCAG AAA) : `color-scheme: dark`, contraste de
+ *         texte visé à 7:1 et non 4,5:1, effets de lueur réduits au minimum.
+ *   · --domain ux → « Color Only, sévérité haute : ne jamais porter une
+ *         information par la seule couleur ; doubler d'une icône ou d'un
+ *         texte. » et « Touch Spacing : 8 px minimum entre deux cibles. »
+ *   · --domain typography → paire « Dashboard Data » (Fira Code + Fira Sans).
+ *
+ * Deux écarts assumés par rapport à la skill, motivés par la spec du projet :
+ *
+ *   1. Polices. La skill livre ses paires en `@import` Google Fonts. Krosmarge
+ *      est hors-ligne d'abord : la spec proscrit tout appel réseau au runtime
+ *      hors catalogue et icônes d'objets, et une police distante ne se
+ *      chargerait pas en avion. On garde donc l'intention de la paire — un sans
+ *      pour les libellés, un monospace pour les données — avec des piles
+ *      système, qui ne coûtent ni requête ni octet.
+ *
+ *   2. Accent et rouge. Sur ce fond, le violet #7C3AED de la base ne tient que
+ *      3,54:1 et le rouge #EF4444 que 4,94:1 sur une carte — sous la cible de
+ *      7:1 du style « Dark Mode (OLED) ». Tous deux ont été éclaircis d'un cran
+ *      dans la même famille (#A78BFA, #F87171).
+ *
+ * Contexte d'usage : téléphone, la nuit, à une main, pendant une partie. D'où
+ * un fond sombre par défaut, des cibles tactiles de 44 px et un accent unique.
+ *
+ * Le vert est réservé. La marge est l'information dominante : --k-positive est
+ * la seule teinte verte de la palette, si bien qu'un chiffre rentable attire
+ * l'œil avant tout le reste. La fraîcheur emprunte une famille distincte (ciel,
+ * ambre, magenta, ardoise) pour ne jamais concurrencer les montants.
+ *
+ * Pourquoi --k-expired est magenta et pas rouge. Un écran de crafts affiche sur
+ * une même ligne un montant --k-negative et une pastille --k-expired. Ces deux
+ * signaux appellent des gestes opposés — abandonner le craft d'un côté, aller
+ * relever le prix de l'autre — et ne doivent donc pas se ressembler. Le rose
+ * #FB7185 d'abord retenu n'était qu'à 8,7° de teinte du rouge #F87171, pour un
+ * rapport de luminance de 1,028:1 : à la lecture rapide, deux rouges.
+ * Le reste du cercle chromatique est déjà pris — rouge par la perte, ambre par
+ * --k-stale, vert par le gain, bleu par --k-fresh, violet par --k-accent. En
+ * exigeant 40° d'écart avec la perte, l'ambre et l'accent, il ne reste que deux
+ * fenêtres : 84-215° (occupée par le vert et le bleu) et 296-320°. Le magenta
+ * n'est donc pas un goût, c'est le seul créneau libre ; 308° en est le milieu
+ * exact, à ~52° du violet comme du rouge. Aucune nuance Tailwind ne convenait
+ * (fuchsia-400 tombe à 37° de l'accent, pink-400 à 31° du rouge), d'où une
+ * valeur sur mesure.
+ *
+ * Contrastes WCAG 2.1 mesurés (script node, sortie reproduite dans le rapport
+ * de tâche), sur --k-bg #020617 puis sur --k-surface #0E1223 :
+ *   texte 19,28 / 17,77   ·  atténué 7,87 / 7,25   ·  positif 8,85 / 8,16
+ *   négatif 7,29 / 6,72   ·  frais 9,42 / 8,68     ·  acceptable 12,08 / 11,14
+ *   périmé 9,05 / 8,34    ·  manquant 7,87 / 7,25  ·  accent 7,41 / 6,83
+ * Tous dépassent le seuil AA de 4,5:1, et la plupart le seuil AAA de 7:1.
+ * --k-border-strong tient 4,24 / 3,91 — au-dessus du 3:1 exigé par WCAG 1.4.11
+ * pour la limite d'un contrôle, ce que --k-border (2,66 / 2,45) ne fait pas :
+ * d'où deux tokens, le fin pour les séparateurs, le fort pour les boutons.
+ *
+ * Les 28 paires de tons sémantiques ont été mesurées en teinte, en luminance et
+ * en ΔE2000 (table complète dans le rapport de tâche). Aucune paire de teintes
+ * saturées ne descend sous 40° d'écart ; le ΔE2000 minimal entre deux tons
+ * distincts est de 12,4, très au-dessus du seuil de discernabilité (~5).
+ * --k-neutral et --k-missing sont volontairement identiques : « montant
+ * inconnu » et « prix jamais relevé » sont le même fait, l'absence de donnée.
+ *
+ * La teinte ne porte jamais seule une information. Entre elles, les quatre
+ * couleurs de fraîcheur ne se séparent que de 1,04:1 à 1,54:1 en luminance :
+ * c'est la silhouette dessinée par Icon.tsx (disque plein, demi-disque, anneau
+ * vide, point d'interrogation) qui les distingue réellement.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Fonds et texte */
+  --k-bg: #020617;
+  --k-surface: #0e1223;
+  --k-text: #f8fafc;
+  --k-text-muted: #94a3b8;
+
+  /* Sémantique des montants */
+  --k-positive: #22c55e;
+  --k-negative: #f87171;
+  --k-neutral: #94a3b8;
+
+  /* Fraîcheur — quatre teintes, doublées par les formes de FreshnessDot.
+     --k-expired est magenta et non rouge : il doit rester lisible à côté d'un
+     montant --k-negative sur la même ligne (voir l'en-tête). */
+  --k-fresh: #38bdf8;
+  --k-stale: #fbbf24;
+  --k-expired: #f288e4;
+  --k-missing: #94a3b8;
+
+  /* Interaction */
+  --k-accent: #a78bfa;
+  --k-accent-text: #020617;
+  --k-border: #475569;
+
+  /* Métrique */
+  --k-tap-min: 44px;
+  --k-radius: 16px;
+  --k-gap: 12px;
+
+  /* --------------------------------------------------------------- Support */
+
+  /* Bordure d'un contrôle : doit tenir 3:1, contrairement à un séparateur. */
+  --k-border-strong: #64748b;
+
+  /* Dérivé de --k-accent, pour qu'un retunage de l'accent se propage seul. */
+  --k-accent-glow: color-mix(in srgb, var(--k-accent) 18%, transparent);
+
+  /* Piles système : la paire « Dashboard Data » de la skill, sans réseau.
+     Le monospace sert aux nombres — en chasse fixe, une colonne de marges se
+     compare d'un coup d'œil sans lire les chiffres. */
+  --k-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --k-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+  --k-font: var(--k-font-sans);
+
+  /* Densité, d'après « Data-Dense Dashboard » : 8 px d'écart minimal entre
+     cibles tactiles (« Touch Spacing »), lignes de liste à 36 px. */
+  --k-gap-tight: 8px;
+  --k-row-h: 36px;
+  --k-icon: 22px;
+
+  /* Transitions : la checklist de la skill impose la fourchette 150-300 ms. */
+  --k-dur: 180ms;
+  --k-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------------------------ Base */
+
+html,
+body {
+  background: var(--k-bg);
+  color: var(--k-text);
+}
+
+body {
+  font-family: var(--k-font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  /* Empêche l'agrandissement automatique du texte en paysage sur iOS. */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ------------------------------------------------------- Coquille de page */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--k-bg);
+}
+
+.app__main {
+  flex: 1;
+  padding: var(--k-gap);
+  /* Réserve la hauteur de la barre d'onglets, encoche du téléphone comprise,
+     pour que le dernier élément d'une liste reste atteignable. */
+  padding-bottom: calc(var(--k-tap-min) + var(--k-gap) * 3 + env(safe-area-inset-bottom, 0px));
+}
+
+.app-loading,
+.app-error {
+  padding: calc(var(--k-gap) * 2);
+  text-align: center;
+}
+
+.app-loading {
+  color: var(--k-text-muted);
+}
+
+.app-error {
+  color: var(--k-negative);
+}
+
+/* ------------------------------------------------- Barre d'onglets basse */
+
+.bottom-nav {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 10;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  /* « Touch Spacing » de la base UX : 8 px au moins entre deux cibles. */
+  gap: var(--k-gap-tight);
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--k-surface);
+  border-top: 1px solid var(--k-border);
+}
+
+.bottom-nav__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--k-tap-min);
+  padding: 4px;
+  border: 0;
+  border-radius: calc(var(--k-radius) - 4px);
+  background: transparent;
+  color: var(--k-text-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  /* Supprime le délai de 300 ms du tap mobile. */
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), color var(--k-dur) var(--k-ease);
+}
+
+/* Le pictogramme est un SVG en ligne : il hérite de `color` et ne se déforme
+   pas si le libellé passe sur deux lignes. */
+.bottom-nav__tab > svg {
+  flex: none;
+}
+
+.bottom-nav__tab[aria-selected='true'] {
+  background: var(--k-accent-glow);
+  color: var(--k-accent);
+}
+
+/* ------------------------------------------------- Fraîcheur des données */
+
+.freshness-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1em;
+  line-height: 1;
+}
+
+.freshness-dot[data-level='fresh'] { color: var(--k-fresh); }
+.freshness-dot[data-level='stale'] { color: var(--k-stale); }
+.freshness-dot[data-level='expired'] { color: var(--k-expired); }
+.freshness-dot[data-level='missing'] { color: var(--k-missing); }
+
+/* ---------------------------------------------------------- Montants */
+
+/* Chasse fixe et chiffres tabulaires : c'est l'intention de la paire
+   « Dashboard Data » de la skill — un mono pour la donnée, un sans pour le
+   libellé. Les colonnes de kamas s'alignent d'une ligne à l'autre. */
+[data-tone] {
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  white-space: nowrap;
+}
+
+[data-tone='positive'] { color: var(--k-positive); }
+[data-tone='negative'] { color: var(--k-negative); }
+[data-tone='neutral'] { color: var(--k-neutral); }
+
+/* --------------------------------------------------- Sélecteur de lot */
+
+.lot-selector {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+.lot-selector__option {
+  flex: 1;
+  min-height: var(--k-tap-min);
+  /* Bordure forte : sur ce fond, la surface du bouton ne se détache que de
+     1,08:1 — c'est le trait qui rend le contrôle identifiable. */
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), color var(--k-dur) var(--k-ease);
+}
+
+.lot-selector__option[aria-pressed='true'] {
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: var(--k-accent-text);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------- Pavé numérique */
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--k-gap-tight);
+}
+
+.keypad__key {
+  /* Saisie à une main : une touche vaut au moins une fois et demie la cible
+     tactile minimale, l'erreur de frappe coûtant ici un prix faux. */
+  min-height: calc(var(--k-tap-min) * 1.5);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 4px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 100ms var(--k-ease), background-color 100ms var(--k-ease);
+}
+
+.keypad__key:active {
+  transform: scale(0.97);
+  background: var(--k-accent-glow);
+}
+
+/* --------------------------------------------------------- Carte de vente */
+
+.sale-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--k-gap);
+  min-height: var(--k-row-h);
+  border: 1px solid var(--k-border);
+  border-left: 3px solid transparent;
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+/* L'urgence se lit à la barre latérale autant qu'à la couleur : une vente qui
+   expire bientôt garde un repère de forme, pas seulement de teinte. Le voile
+   est dérivé de --k-expired, pour qu'un retunage du token le suive. */
+.sale-card[data-urgent='true'] {
+  border-left-color: var(--k-expired);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--k-expired) 12%, transparent),
+    var(--k-surface) 40%
+  );
+}
+
+/* ------------------------------------------------------------ Écran Crafts */
+
+/* Correctif de la tâche 13b : le contrat de tokens de la tâche 12 ne couvrait
+   que les six familles de sélecteurs partagés ; les classes propres à un
+   écran n'appartenaient à personne. La sémantique de couleur ([data-tone],
+   .freshness-dot[data-level]) fonctionnait déjà — il ne manquait que la mise
+   en page. Usage visé : une main, la nuit, à côté du jeu — la marge doit
+   dominer visuellement la ligne. */
+
+.crafts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+/* En-tête collant : sans fond opaque, les lignes défileraient visiblement
+   dessous. z-index minimal, suffisant face au flux normal du reste de
+   l'écran (le seul élément fixe de la coquille, .bottom-nav, est en z-index
+   10 et ne partage pas d'ancêtre empilé avec cet en-tête). */
+.crafts__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  padding-bottom: var(--k-gap-tight);
+  background: var(--k-bg);
+}
+
+/* Pastilles de filtre et boutons de tri : rangée qui défile plutôt que de
+   passer à la ligne, pour ne jamais pousser la largeur au-delà de 360 px. */
+.crafts__filters,
+.crafts__sort {
+  display: flex;
+  gap: var(--k-gap-tight);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.crafts__filters::-webkit-scrollbar,
+.crafts__sort::-webkit-scrollbar {
+  display: none;
+}
+
+/* Les boutons de ces deux groupes n'ont pas de classe propre dans le DOM
+   (voir CraftsScreen.tsx) : on les cible par descendance, comme
+   .lot-selector__option sert de modèle pour l'état pressé. */
+.crafts__filters button,
+.crafts__sort button {
+  flex: none;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), color var(--k-dur) var(--k-ease),
+    border-color var(--k-dur) var(--k-ease);
+}
+
+.crafts__filters button[aria-pressed='true'],
+.crafts__sort button[aria-pressed='true'] {
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: var(--k-accent-text);
+  font-weight: 600;
+}
+
+/* Bandeau de relevé manquant : lisible comme actionnable (bordure et fond
+   teintés d'accent) sans rivaliser avec la teinte des montants, réservée aux
+   marges. */
+.crafts__banner {
+  display: block;
+  width: 100%;
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-accent);
+  border-radius: var(--k-radius);
+  background: color-mix(in srgb, var(--k-accent) 14%, transparent);
+  color: var(--k-text);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease);
+}
+
+.crafts__banner:active {
+  background: color-mix(in srgb, var(--k-accent) 24%, transparent);
+}
+
+.crafts__empty {
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  color: var(--k-text-muted);
+  text-align: center;
+}
+
+.crafts__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Ligne de craft : bouton pleine largeur. Icône fixe, nom extensible et
+   tronqué, marge fixe alignée à droite — dans cet ordre, la marge ne peut
+   jamais être repoussée hors écran par un nom long. */
+.craft-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), border-color var(--k-dur) var(--k-ease);
+}
+
+.craft-row:active {
+  background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface));
+}
+
+.craft-row > img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+/* min-width: 0 est nécessaire dans un enfant flex pour que l'ellipse
+   fonctionne au lieu de repousser la largeur de la ligne. */
+.craft-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.9375rem;
+}
+
+.craft-row__level {
+  display: inline-block;
+  margin-left: var(--k-gap-tight);
+  padding: 1px 6px;
+  border: 1px solid var(--k-border);
+  border-radius: 999px;
+  color: var(--k-text-muted);
+  font-size: 0.6875rem;
+  vertical-align: middle;
+}
+
+.craft-row__margin {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+/* La marge domine le nom : corps large, gras, sur la règle [data-tone]
+   existante (non modifiée — seule une sélection plus spécifique ajoute ces
+   deux propriétés dans ce contexte). */
+.craft-row__margin > [data-tone] {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* Pourcentage : chasse fixe comme le montant, cf. exigence de mise en page
+   n°2 — une colonne de chiffres s'aligne d'un coup d'œil en monospace. */
+.craft-row__pct {
+  display: block;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+}
+
+.craft-row > .freshness-dot {
+  flex: none;
+}
+
+/* ------------------------------------------------------ Écran Détail d'un craft */
+
+/* Comme l'écran Crafts, cet écran remplace la coquille `.app` plutôt que de
+   s'y nicher (voir App.tsx) : pas de barre d'onglets pendant qu'on consulte
+   un craft, un seul geste (←) pour y revenir. `.detail` reprend donc lui-même
+   le fond et le padding que fournissait `.app__main`. */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+  min-height: 100dvh;
+  padding: var(--k-gap);
+  padding-bottom: calc(var(--k-gap) + env(safe-area-inset-bottom, 0px));
+  background: var(--k-bg);
+}
+
+.detail__header {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+}
+
+.detail__back {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--k-tap-min);
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease);
+}
+
+.detail__back:active {
+  background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface));
+}
+
+.detail__header > img {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  object-fit: contain;
+}
+
+/* min-width: 0 permet à l'ellipse de jouer plutôt que de pousser le bouton
+   retour ou l'image hors de l'écran à 360 px, cf. .craft-row__name. */
+.detail__header h1 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.detail__empty {
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  color: var(--k-text-muted);
+  text-align: center;
+}
+
+.detail__ingredients {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Ligne d'ingrédient : bouton pleine largeur vers la saisie de son prix
+   (tâche 15). Même schéma que .craft-row — icône fixe, nom tronqué flexible,
+   montants alignés à droite — pour que la marge ne soit jamais repoussée. */
+.detail__line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease);
+}
+
+.detail__line:active {
+  background: color-mix(in srgb, var(--k-accent) 8%, var(--k-surface));
+}
+
+.detail__line > img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+.detail__line-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.detail__line-amounts {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.detail__line-qty {
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.detail__line-amounts > [data-tone] {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.detail__line > .freshness-dot {
+  flex: none;
+}
+
+/* Récapitulatif coût / vente / taxe / marge, en grille à deux colonnes : le
+   marquage <dl><dt><dd> du composant remplit naturellement la grille dans
+   l'ordre du DOM, sans changement de structure. */
+.detail__totals {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--k-gap-tight) var(--k-gap);
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.detail__totals dt {
+  min-width: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.detail__totals dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px var(--k-gap-tight);
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+}
+
+.detail__totals input[type='number'] {
+  width: 100%;
+  max-width: 140px;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap-tight);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.detail__totals input[type='number']::placeholder {
+  color: var(--k-text-muted);
+  font-family: var(--k-font-sans);
+}
+
+/* Rappel qu'un prix simulé n'a pas été enregistré : la teinte d'accent (celle
+   de l'interaction, jamais celle d'un montant) marque le texte comme un état
+   passager plutôt qu'une donnée. Passe à la ligne sous le champ (flex-basis
+   100 % dans le conteneur `dd` en wrap) pour ne jamais pousser la largeur du
+   couple prix/label au-delà de 360 px. */
+.detail__simulated {
+  flex-basis: 100%;
+  color: var(--k-accent);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.detail__pct {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Pastille « simulé » à la place de la pastille de fraîcheur du prix de vente.
+   Un chiffre tapé à l'instant est parfaitement récent et parfaitement
+   hypothétique : lui donner la teinte de --k-fresh ferait passer une hypothèse
+   pour un relevé. Elle porte donc l'accent — la teinte de l'interaction, jamais
+   celle d'une donnée — comme .detail__simulated juste en dessous. */
+.detail__sim-badge {
+  flex: none;
+  padding: 1px 8px;
+  border: 1px solid var(--k-accent);
+  border-radius: 999px;
+  color: var(--k-accent);
+  font-size: 0.6875rem;
+  font-style: italic;
+}
+
+/* Ce que qualifie la pastille posée à côté de la marge nette. Passe à la ligne
+   sous le montant (flex-basis 100 % dans le `dd` en wrap), comme
+   .detail__simulated : à 360 px, la marge ne doit jamais être repoussée. */
+.detail__confidence-label {
+  flex-basis: 100%;
+  color: var(--k-text-muted);
+  font-size: 0.6875rem;
+}
+
+/* Carte de comparaison vente/brisage — même habillage que .sale-card, sans sa
+   barre d'urgence, cette carte n'ayant pas de notion d'échéance. */
+.detail__breaking {
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.detail__breaking h2 {
+  margin: 0 0 var(--k-gap-tight);
+  font-size: 1rem;
+}
+
+.detail__breaking p {
+  margin: 0 0 var(--k-gap-tight);
+}
+
+/* Le brisage est une estimation, pas une donnée relevée : elle porte donc la
+   même sémantique visuelle que .detail__simulated (texte atténué, italique)
+   plutôt que la teinte d'un montant — ce n'est explicitement pas un chiffre
+   sur lequel s'engager. */
+.detail__estimate {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* État « runes non associées » : ni un montant (aucune teinte [data-tone]),
+   ni une simple note atténuée comme .detail__estimate — cette valeur n'est
+   pas une estimation imprécise, elle est absente. Le rappel d'accent (même
+   logique que .crafts__banner, tâche 13) signale que c'est actionnable
+   ailleurs (Réglages, tâche 17), sans se faire passer pour un chiffre. */
+.detail__breaking-unconfigured {
+  margin: 0;
+  color: var(--k-text);
+  font-size: 0.875rem;
+}
+
+.detail__list-sale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.detail__list-sale h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Étiquette du champ « Nombre de lots ». Reprend la teinte atténuée et le
+   corps des étiquettes de .detail__totals dt : c'est le même rôle, nommer une
+   donnée saisie ou calculée. */
+.detail__sale-label {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Récapitulatif « 5 lots de 100 · 500 unités ». Chasse fixe comme toute donnée
+   chiffrée, mais sans teinte de montant : ce n'est pas une somme, c'est ce que
+   le joueur vient de décrire. Lève à lui seul l'ambiguïté entre un nombre de
+   lots et un nombre d'unités. */
+.detail__sale-units {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+/* Combinateur d'enfant direct (>) : `.lot-selector` place ses propres boutons
+   deux niveaux plus bas (`.detail__list-sale > .lot-selector > button`), donc
+   hors de portée de ces règles. Sans le `>`, `.detail__list-sale button`
+   (spécificité 0,1,1) l'aurait emporté sur `.lot-selector__option` (0,1,0) et
+   aurait cassé son style partagé pour les boutons ×1/×10/×100 de cet écran —
+   bug constaté puis corrigé pendant la vérification en navigateur de cette
+   tâche. */
+.detail__list-sale > input[type='number'] {
+  width: 100%;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail__list-sale > button {
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-accent);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: opacity var(--k-dur) var(--k-ease), background-color var(--k-dur) var(--k-ease);
+}
+
+/* Grisée plutôt que masquée : le joueur voit que l'action existe et pourquoi
+   elle est bloquée (coût ou prix manquant) sans avoir à deviner. */
+.detail__list-sale > button:disabled {
+  border-color: var(--k-border-strong);
+  background: var(--k-border);
+  color: var(--k-text-muted);
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------ Écran Prix */
+
+/* Tâche 15. Le pavé numérique (.keypad, .keypad__key) fait déjà partie du
+   contrat de tokens partagé depuis la tâche 12 ; le reste de cet écran —
+   file guidée, recherche libre, récapitulatif de fin de session — n'avait
+   pas de propriétaire avant cette tâche, cf. l'amendement aux contraintes
+   globales du plan. Usage visé : une main, debout à l'HDV, entre deux
+   combats. Chaque bouton vaut au moins --k-tap-min ; aucune règle ne code de
+   teinte en dur, tout passe par les tokens ou par [data-tone]. */
+
+.survey {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+.survey__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+}
+
+.survey__modes {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+/* Mêmes proportions que .crafts__filters button — bascule de mode, pas un
+   filtre, mais le même geste (pastille pressée = état actif). */
+.survey__mode-btn {
+  flex: none;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), color var(--k-dur) var(--k-ease),
+    border-color var(--k-dur) var(--k-ease);
+}
+
+.survey__mode-btn[aria-pressed='true'] {
+  background: var(--k-accent);
+  border-color: var(--k-accent);
+  color: var(--k-accent-text);
+  font-weight: 600;
+}
+
+/* Compteur x / y de la file guidée : chasse fixe, comme toute donnée
+   chiffrée (cf. l'en-tête du fichier). */
+.survey__progress {
+  flex: none;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+.survey__search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+}
+
+.survey__search-input {
+  width: 100%;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+}
+
+.survey__search-input::placeholder {
+  color: var(--k-text-muted);
+}
+
+/* Liste de résultats : défilement vertical propre, jamais horizontal — la
+   largeur reste celle de l'écran, cf. contrainte des 360 px. */
+.survey__search-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  max-height: 40vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.survey__search-result {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.survey__search-result > img {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: calc(var(--k-radius) - 12px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+/* min-width: 0 permet à l'ellipse de jouer dans ce conteneur flex, comme
+   .craft-row__name. */
+.survey__search-result-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+/* Fiche de l'objet en cours : centrée, l'image et le nom d'abord, le dernier
+   relevé ensuite — c'est ce que le joueur vérifie avant de taper un prix. */
+.survey__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  text-align: center;
+}
+
+.survey__item > img {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  object-fit: contain;
+}
+
+.survey__item h1 {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.survey__previous {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.survey__previous-value {
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* « Jamais relevé » : même sémantique que .detail__estimate — une absence de
+   donnée, pas un chiffre sur lequel s'engager, donc pas de chasse fixe. */
+.survey__previous-empty {
+  font-style: italic;
+}
+
+/* Saisie en cours : le plus gros corps de texte de l'écran, la donnée que le
+   joueur vient de taper doit se relire d'un coup d'œil avant de valider. */
+.survey__draft {
+  display: block;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Entrée de file sans objet au catalogue. Ne porte aucune teinte de montant :
+   ce n'est ni un gain ni une perte, seulement une donnée amont absente — même
+   sémantique que .detail__breaking-unconfigured, texte normal et non atténué,
+   puisque la phrase indique quoi faire (« Passe au suivant »). Le bouton
+   « Passer » reste rendu sous ce message, hors du bloc conditionnel. */
+.survey__unknown {
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.survey__actions {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+.survey__skip,
+.survey__submit {
+  flex: 1;
+  min-height: var(--k-tap-min);
+  border-radius: calc(var(--k-radius) - 6px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), opacity var(--k-dur) var(--k-ease);
+}
+
+.survey__skip {
+  border: 1px solid var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+}
+
+.survey__submit {
+  border: 1px solid var(--k-accent);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+}
+
+/* Grisé plutôt que masqué, même logique que .detail__list-sale > button —
+   le joueur voit que l'action existe et pourquoi elle attend une saisie. */
+.survey__submit:disabled {
+  border-color: var(--k-border-strong);
+  background: var(--k-border);
+  color: var(--k-text-muted);
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------- Accueil dune file jamais peuplée */
+
+/* Distinct de .survey-done : ce n'est pas un bilan, c'est un point de départ.
+   Même mise en page centrée, mais le texte y domine et il n'y a rien à
+   compter. Le renvoi vers les Réglages reprend le ton de .crafts__empty, qui
+   traite déjà correctement le même cas côté crafts. */
+.survey-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  text-align: center;
+}
+
+.survey-welcome h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.survey-welcome p {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.875rem;
+}
+
+.survey-welcome__search {
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* ------------------------------------------------ Récapitulatif de session */
+
+.survey-done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  padding: var(--k-gap);
+  text-align: center;
+}
+
+.survey-done h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.survey-done h2 {
+  margin: var(--k-gap-tight) 0 0;
+  font-size: 1rem;
+  color: var(--k-positive);
+}
+
+.survey-done__empty {
+  color: var(--k-text-muted);
+}
+
+/* Crafts nommés plutôt qu'un simple compteur : nom tronqué à gauche, marge
+   alignée à droite, comme .craft-row__margin — c'est la ligne qui donne
+   envie de revenir demain. */
+.survey-done__unlocked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.survey-done__unlocked li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-row-h);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.survey-done__unlocked-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.survey-done__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin-top: var(--k-gap-tight);
+}
+
+.survey-done__restart,
+.survey-done__search {
+  min-height: var(--k-tap-min);
+  border-radius: calc(var(--k-radius) - 6px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.survey-done__restart {
+  border: 1px solid var(--k-accent);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+}
+
+.survey-done__search {
+  border: 1px solid var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text);
+}
+
+/* ------------------------------------------------------------ Écran Ventes */
+
+/* Tâche 16. Le contrat de tokens couvrait déjà .sale-card et son état
+   [data-urgent='true'] (tâche 12) ; cet écran lui donne son contenu et sa
+   mise en page, plus l'historique des ventes conclues. Usage visé : le joueur
+   revient régulièrement vérifier ce qui traîne encore à l'HDV — la carte
+   urgente doit se repérer sans lire chaque ligne, et une vente conclue doit
+   afficher son vrai profit (figé sur le coût de production à la mise en
+   vente), jamais un chiffre recalculé aux prix du jour. */
+
+.sales {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+/* Même grille à deux colonnes que .detail__totals : les deux chiffres qui
+   résument l'écran avant le détail ligne par ligne. */
+.sales__summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--k-gap-tight) var(--k-gap);
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.sales__summary dt {
+  min-width: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.sales__summary dd {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+}
+
+.sales__summary dd > [data-tone] {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.sales__heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sales__empty {
+  margin: 0;
+  padding: calc(var(--k-gap) * 2) var(--k-gap);
+  color: var(--k-text-muted);
+  text-align: center;
+}
+
+.sales__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* .sale-card fournit déjà la carte (padding, bordures, état [data-urgent])
+   depuis la tâche 12 ; les trois rangées ci-dessous — vignette/nom/échéance,
+   quantité/prix, actions — sont propres à cet écran. */
+.sale-card__main {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+}
+
+.sale-card__main > img {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+/* min-width: 0 permet à l'ellipse de jouer plutôt que de repousser
+   l'échéance hors de l'écran à 360 px, cf. .craft-row__name. */
+.sale-card__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.9375rem;
+}
+
+/* Chasse fixe comme toute donnée chiffrée (le compte à rebours en est une).
+   L'urgence est déjà portée par la bordure et le fond de .sale-card — cette
+   teinte double le signal, elle ne le porte pas seule. */
+.sale-card__expiry {
+  flex: none;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.sale-card__expiry[data-urgent='true'] {
+  color: var(--k-expired);
+  font-weight: 600;
+}
+
+.sale-card__details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+}
+
+.sale-card__qty {
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+.sale-card__details > [data-tone] {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.sale-card__actions {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+.sale-card__sold,
+.sale-card__returned {
+  flex: 1;
+  min-height: var(--k-tap-min);
+  border-radius: calc(var(--k-radius) - 6px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), opacity var(--k-dur) var(--k-ease);
+}
+
+.sale-card__sold {
+  border: 1px solid var(--k-accent);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+}
+
+/* Bordure neutre plutôt qu'un rouge franc : un retour n'est pas une erreur de
+   manipulation qu'on décourage, c'est un état de jeu réel que le joueur doit
+   pouvoir enregistrer aussi facilement qu'une vente. La perte qu'il implique
+   se lit dans l'historique, en toutes lettres et en kamas, pas sur ce bouton. */
+.sale-card__returned {
+  border: 1px solid var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+}
+
+.sales__history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Même schéma que .detail__line — icône fixe, nom tronqué flexible, chiffre
+   aligné à droite — mais sans bouton : une ligne d'historique ne mène nulle
+   part, elle ne fait que rappeler ce qui s'est passé. */
+.sales__history-row {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-row-h);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.sales__history-row > img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: calc(var(--k-radius) - 10px);
+  background: var(--k-bg);
+  object-fit: contain;
+}
+
+.sales__history-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.sales__history-qty {
+  flex: none;
+  color: var(--k-text-muted);
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+}
+
+/* Une vente retournée n'est pas neutre : la taxe payée à la mise en vente
+   n'est pas remboursée. Le libellé nomme la perte et son montant exact
+   (calculé par domain/margin.ts, jamais inventé) plutôt que de la taire. */
+.sales__history-returned {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+  text-align: right;
+  white-space: normal;
+}
+
+/* ---------------------------------------------------------- Écran Réglages */
+
+/* Tâche 17. Trois blocs sans propriétaire visuel avant cette tâche, cf.
+   l'amendement aux contraintes globales du plan : niveaux de métier (ce qui
+   fait apparaître un craft sur l'écran Crafts — le vrai premier contact avec
+   l'appli), association des runes (débloque le module de brisage de la tâche
+   14) et sauvegarde (l'investissement en relevés de prix du joueur). Usage
+   visé : une visite rare, posée, pas au milieu d'un combat — d'où une liste
+   verticale simple plutôt que la densité des autres écrans. */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+}
+
+.settings h2 {
+  margin: var(--k-gap) 0 0;
+  font-size: 1rem;
+}
+
+.settings h2:first-child {
+  margin-top: 0;
+}
+
+.settings__hint {
+  margin: 0 0 var(--k-gap-tight);
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Ligne « métier + niveau » : nom extensible et tronqué, champ de saisie fixe
+   à droite — même schéma que .craft-row, pour que le libellé le plus long
+   (« Poissonnier ») ne pousse jamais le champ hors de l'écran à 360 px. */
+.settings__job {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.settings__job > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.settings__job input[type='number'] {
+  flex: none;
+  width: 72px;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap-tight);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Ligne « statistique + identifiant de rune + nom résolu » : trois zones qui
+   se disputent 360 px, donc deux priorités opposées — le champ numérique est
+   fixe (un identifiant catalogue n'a pas besoin de plus de place), le nom de
+   la rune résolue est celui qui cède (min-width: 0, ellipse), pour rester
+   lisible même sur l'objet le plus long du catalogue. */
+.settings__rune {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.settings__rune > span:first-child {
+  flex: none;
+  width: 84px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.settings__rune input[type='number'] {
+  flex: none;
+  width: 72px;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap-tight);
+  border: 1px solid var(--k-border-strong);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-bg);
+  color: var(--k-text);
+  font: inherit;
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Rune non associée : même sémantique que .detail__breaking-unconfigured
+   (texte normal, pas atténué) tant que la valeur reste 0 — c'est un état
+   actionnable, pas une simple note. Une fois résolue, le nom réel de l'objet
+   catalogue retombe sur .settings__rune-name sans distinction de teinte : le
+   fait qu'il s'affiche est déjà la confirmation attendue par le joueur. */
+.settings__rune-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+  font-style: italic;
+  text-align: right;
+}
+
+/* Boutons d'export / import : pleine largeur, empilés — aucune des deux
+   actions n'est plus fréquente que l'autre, contrairement aux paires
+   sold/returned de l'écran Ventes qui partagent une ligne. */
+.settings > button {
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-accent);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--k-dur) var(--k-ease), opacity var(--k-dur) var(--k-ease);
+}
+
+/* Import de sauvegarde : geste destructif (voir la confirmation dans
+   SettingsScreen.tsx), donc pas la même teinte pleine que l'export — bordure
+   neutre plutôt que --k-accent, même logique que .sale-card__returned. */
+.settings > button + button {
+  border-color: var(--k-border-strong);
+  background: var(--k-surface);
+  color: var(--k-text);
+}
+
+/* Retour de l'import (succès ou échec) : pas de teinte de montant, ce n'est
+   ni un gain ni une perte — texte normal, comme
+   .detail__breaking-unconfigured. */
+.settings__message {
+  margin: 0;
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-size: 0.875rem;
+}
+
+/* ------------------------------------------------------------ Interaction */
+
+:where(button, [role='tab'], a):focus-visible {
+  outline: 2px solid var(--k-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

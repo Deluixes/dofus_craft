@@ -33,3 +33,6 @@ coverage/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Espace de travail SDD (scratch, non versionné)
+.superpowers/
