@@ -1,6 +1,13 @@
 import type { Catalog, CatalogIndex } from './types'
 
-export const CATALOG_URL = '/catalog.v1.json'
+/**
+ * Le site est publié sous un sous-chemin (`/dofus_craft/` sur GitHub Pages),
+ * pas à la racine du domaine. Un chemin absolu écrit en dur donnerait donc un
+ * 404 en production tout en marchant en développement — c'est l'erreur la plus
+ * classique d'un déploiement Pages. `BASE_URL` est réécrit par Vite au build et
+ * vaut « / » en développement comme en test.
+ */
+export const CATALOG_URL = `${import.meta.env.BASE_URL}catalog.v1.json`
 
 /**
  * Construit les index runtime. `recipesByIngredientId` est indispensable au
