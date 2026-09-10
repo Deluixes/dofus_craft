@@ -1,0 +1,61 @@
+name: Déploiement GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Permet de redéployer à la main depuis l'onglet Actions, sans commit.
+  workflow_dispatch:
+
+# Droits minimaux du déploiement Pages, qui s'authentifie par OIDC.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un seul déploiement à la fois. On n'annule pas celui en cours : mieux vaut
+# attendre qu'il finisse que laisser le site dans un état intermédiaire.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construction:
+    name: Construction
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v4
+
+      - name: Installation de Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Tests unitaires
+        run: npm test
+
+      # « npm run build » enchaîne la génération du catalogue, la vérification
+      # de types puis Vite : une erreur de type bloque donc le déploiement.
+      - name: Build de production
+        run: npm run build
+
+      - name: Envoi de l'artefact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploiement:
+    name: Publication
+    needs: construction
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publication.outputs.page_url }}
+    steps:
+      - name: Publication sur GitHub Pages
+        id: publication
+        uses: actions/deploy-pages@v4

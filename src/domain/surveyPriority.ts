@@ -56,8 +56,9 @@ export function surveyPriority(
   /**
    * N'entre dans la file qu'un objet réellement présent au catalogue.
    *
-   * 147 ingrédients du dataset Dofus Touch référencent un identifiant sans
-   * objet correspondant. Un tel identifiant n'a ni nom ni image, ne peut donc
+   * Dix ingrédients du dataset Dofus Touch référencent un identifiant sans
+   * objet correspondant — ils étaient 147 avant l'ajout des familiers et des
+   * montures au catalogue. Un tel identifiant n'a ni nom ni image, ne peut donc
    * jamais être relevé, et son obsolescence reste bloquée à
    * `MISSING_OBSOLESCENCE` pendant que tous les prix relevés décroissent : il
    * remonte mécaniquement en tête de file session après session. Le filtrer

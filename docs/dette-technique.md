@@ -1,42 +1,53 @@
-# Dette technique — Krosmarge v1
+# Dette technique — Krosmarge
 
-État à la fusion de `feat/krosmarge-v1` dans `main` (33 commits, 132 tests).
+État à la fusion de `feat/krosmarge-v1` dans `main` (33 commits, 132 tests),
+**revu le 2026-09-10** à la fusion de `feat/registre-negoce` (273 tests).
 
 Chaque point ci-dessous a été identifié par une revue, jugé non bloquant, et consciemment reporté. Aucun n'est une surprise.
+
+## Réglé par le registre de négoce (2026-09-10)
+
+- **Le profit réalisé ignorait la taxe perdue des retours.** Le modèle traite
+  désormais chaque mise en vente comme une taxe datée et perdue, où qu'elle
+  aboutisse. Un retrait n'efface plus rien.
+- **La taxe était à 2 %.** Le jeu est à 3 %. Le taux est maintenant un entier en
+  pour mille, arrondi une seule fois sur le lot entier, et le libellé de
+  l'interface dérive de la constante.
+- **147 ingrédients orphelins.** L'ajout de `pet.json` et `mount.json` les fait
+  tomber à **10**, et rend calculables environ 150 recettes qui ne l'étaient pas.
+- **La sémantique des ventes déjà enregistrées.** La question ne se pose plus :
+  la migration Dexie v2 convertit les lots en unités, et le registre ne raisonne
+  qu'en unités.
+- **Aucun test d'écran, sauf `PricesScreen`.** `TradesScreen` en a un désormais,
+  qui a immédiatement attrapé trois défauts d'assertion. Reste dû pour
+  `CraftsScreen`, `CraftDetailScreen`, `SettingsScreen`, `TradeForm` et
+  `LedgerScreen`.
+- **Le libellé de quantité comprimait les noms d'objets.** L'écran a été
+  réécrit ; `.sales__history-qty` n'existe plus sous cette forme.
 
 ---
 
 ## À traiter en priorité
 
-### Quatre écrans sur cinq n'ont aucun test
+### Cinq écrans sur sept n'ont aucun test
 
-`CraftDetailScreen`, `CraftsScreen`, `SalesScreen` et `SettingsScreen` ne sont couverts par aucun test. Seul `PricesScreen` en a un, écrit pendant la vague de correction finale.
+`CraftsScreen`, `CraftDetailScreen`, `SettingsScreen`, `TradeForm` et
+`LedgerScreen` ne sont couverts par aucun test. `PricesScreen` et
+`TradesScreen` en ont un.
 
-Ce n'est pas une lacune théorique : la revue finale a trouvé quatre défauts de câblage, **tous** situés entre un domaine correct et un stockage correct, et **aucun** n'aurait survécu à un test d'écran. Le relecteur l'a formulé ainsi : un seul fichier de test sur `PricesScreen` aurait attrapé quatre des dix défauts.
+Ce n'est pas une lacune théorique : la revue finale de la v1 a trouvé quatre défauts de câblage, **tous** situés entre un domaine correct et un stockage correct, et **aucun** n'aurait survécu à un test d'écran. Le relecteur l'a formulé ainsi : un seul fichier de test sur `PricesScreen` aurait attrapé quatre des dix défauts. Le test de `TradesScreen`, écrit le 2026-09-10, a confirmé la leçon en attrapant trois défauts dès sa première exécution.
 
-Le harnais est déjà écrit et réutilisable : `vi.mock('../AppState')` dans `src/ui/screens/PricesScreen.test.tsx`.
+Le harnais est écrit et réutilisable : `vi.mock('../AppState')` dans `src/ui/screens/PricesScreen.test.tsx` ou `TradesScreen.test.tsx` — ce dernier fournit en plus un normaliseur pour l'espace fine insécable des montants.
 
-Cas le plus urgent : l'indice de confiance sur la marge du détail de craft n'est verrouillé que par une vérification navigateur, non reproductible automatiquement.
-
-### Les ventes déjà enregistrées ont changé de sémantique
-
-La correction du calcul des lots a redéfini `Sale.quantity` : c'est désormais un **nombre de lots**, et le total d'unités vaut `quantity × lotSize`.
-
-Une vente déjà présente en base sous la forme `{ quantity: 5, lotSize: 100 }` valait 5 unités avant, et en vaut 500 après — sans migration. Si des ventes de test avec un lot différent de 1 existent, leurs chiffres sont faux et la table doit être vidée depuis les Réglages.
-
-C'est la seule réécriture de chiffres d'argent déjà affichés de tout le projet, et elle mérite une décision explicite plutôt qu'un oubli.
+Cas les plus urgents : l'indice de confiance sur la marge du détail de craft, verrouillé par une seule vérification navigateur ; et `TradeForm`, où se décide le coût de revient de chaque opération.
 
 ---
 
 ## Confort et robustesse
 
-### Le libellé de quantité comprime les noms d'objets
-
-`.sales__history-qty` est en `flex: none` et son contenu est passé de `×5` à `5 lots de 100 · 500 unités` — 26 caractères. À 360 px de large, il n'y a pas de débordement, mais le nom de l'objet est fortement tronqué. Le pire cas, la ligne « retourné », n'a pas été mesuré.
-
 ### La fraîcheur ne vieillit pas à l'écran
 
-`CraftsScreen`, `CraftDetailScreen` et `SalesScreen` appellent `Date.now()` au rendu sans minuteur. Tant qu'un écran reste ouvert, les pastilles de fraîcheur ne changent pas et le compte à rebours d'expiration des ventes ne s'égrène pas.
+`CraftsScreen`, `CraftDetailScreen` et `TradesScreen` appellent `Date.now()` au rendu sans minuteur. Tant qu'un écran reste ouvert, les pastilles de fraîcheur ne changent pas et l'ancienneté du stock affichée sur les cartes de négoce ne s'incrémente pas.
 
 ### « Nouvelle session » resert les mêmes objets
 
@@ -52,9 +63,31 @@ La file de relevé est volontairement figée à l'ouverture, pour ne pas se réo
 
 Régler un métier à 60 puis le remettre à 0 laisse `{ tailleur: 0 }` dans `jobLevels`. La pastille de filtre correspondante reste affichée en tête de l'écran Crafts sans jamais rien contenir, et le message « déclare tes niveaux de métier » cesse d'apparaître.
 
-### Le profit réalisé ignore la taxe perdue des retours
+### Aucun rappel de sauvegarde
 
-`SalesScreen` ne totalise que les ventes conclues. La taxe payée sur une vente retournée est affichée ligne par ligne mais jamais sommée, donc le chiffre de tête surestime le profit réel de quiconque a des retours.
+L'export JSON existe, mais rien ne pousse à le faire. Le registre de négoce
+accumule des mois de saisie que ni IndexedDB ni le navigateur ne garantissent :
+une purge de données de site effacerait tout. Un bandeau discret au-delà de N
+jours sans export était prévu au cahier des charges et n'a pas été implémenté.
+
+### Le formulaire n'avertit pas des incohérences de dates
+
+Rien n'empêche de saisir une vente antérieure à l'achat, ou une quantité vendue
+supérieure à la quantité acquise. Le moteur y résiste — la quantité restante est
+bornée à zéro, les agrégats restent exacts — mais l'utilisateur n'est pas
+prévenu qu'il vient de saisir quelque chose d'impossible.
+
+### Pas d'annulation après suppression
+
+Supprimer une opération demande confirmation, mais est définitif. Le modèle
+étant immuable, une pile en mémoire des vingt derniers états coûterait une
+dizaine de lignes et supprimerait une classe entière de perte de données.
+
+### L'édition d'une ligne existante est impossible
+
+On peut ajouter et supprimer des mouvements, retirer, supprimer la ligne — mais
+pas corriger le prix d'achat, la quantité acquise ou la date d'acquisition d'une
+opération déjà enregistrée. Il faut la supprimer et la ressaisir.
 
 ---
 
@@ -66,11 +99,13 @@ Ni `api.dofusdb.fr` (contenu absent de Dofus 3) ni l'encyclopédie Touch (403 Cl
 
 Comme `inconnu` n'est pas dans `CRAFT_JOBS`, ces recettes n'apparaissent **sous aucun filtre**, pas même « Tous ». La spec §3.2 promettait qu'elles resteraient visibles avec un badge explicite et corrigeables depuis les Réglages : ni le badge ni l'interface de correction n'existent.
 
-### 147 ingrédients orphelins, 156 recettes incalculables
+### 10 ingrédients orphelins
 
-Ces ingrédients sont référencés par des recettes mais absents du dataset. Les 156 recettes concernées ne pourront jamais être calculées, et gonflent le bandeau « N crafts non classés » d'un nombre qui ne peut pas atteindre zéro, sans explication.
+Ces ingrédients sont référencés par des recettes mais absents du dataset. Les recettes concernées ne pourront jamais être calculées, et gonflent le bandeau « N crafts non classés » d'un nombre qui ne peut pas atteindre zéro, sans explication.
 
-Une ligne dans les Réglages — « 60 recettes sans métier identifié, 156 recettes incalculables faute d'ingrédients absents du dataset » — suffirait à honnorer le principe directeur, qui interdit de taire une lacune connue.
+**Nettement réduit le 2026-09-10** : ils étaient 147, pour 156 recettes incalculables. L'ajout des familiers et des montures au catalogue en a résolu 137 — ces objets étaient référencés comme ingrédients sans figurer au catalogue. Il en reste 10, dont les identifiants sont affichés par `npm run build:catalog`.
+
+Une ligne dans les Réglages — « 60 recettes sans métier identifié, N recettes incalculables faute d'ingrédients absents du dataset » — suffirait à honorer le principe directeur, qui interdit de taire une lacune connue.
 
 ### La table de poids des statistiques n'est pas vérifiée
 

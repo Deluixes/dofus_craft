@@ -1,6 +1,6 @@
 import type { KrosmargeDB } from './db'
 import type { PriceBook, PriceEntry, FreshnessConfig } from '../domain/types'
-import type { Sale, SaleStatus } from '../domain/sale'
+import type { Trade } from '../domain/trade'
 import type { JobLevels } from '../domain/surveyPriority'
 import { DEFAULT_FRESHNESS } from '../domain/freshness'
 
@@ -24,11 +24,17 @@ export interface PriceRepository {
   historyFor(itemId: number): Promise<PriceEntry[]>
 }
 
-export interface SaleRepository {
-  add(sale: Sale): Promise<number>
-  listed(): Promise<Sale[]>
-  all(): Promise<Sale[]>
-  close(id: number, status: SaleStatus, closedAt: number): Promise<void>
+/**
+ * Les mouvements d'une ligne — mises en vente et ventes — sont des tableaux
+ * embarqués, jamais des tables séparées : ils ne sont jamais interrogés
+ * indépendamment de leur ligne. Toute modification réécrit donc la ligne
+ * entière, ce qui rend chaque écriture atomique sans transaction explicite.
+ */
+export interface TradeRepository {
+  add(trade: Trade): Promise<number>
+  all(): Promise<Trade[]>
+  save(trade: Trade): Promise<void>
+  remove(id: number): Promise<void>
 }
 
 export interface SettingsRepository {
@@ -54,12 +60,15 @@ export function makePriceRepository(db: KrosmargeDB): PriceRepository {
   }
 }
 
-export function makeSaleRepository(db: KrosmargeDB): SaleRepository {
+export function makeTradeRepository(db: KrosmargeDB): TradeRepository {
   return {
-    async add(sale) { return db.sales.add(sale) },
-    async listed() { return db.sales.where('status').equals('listed').toArray() },
-    async all() { return db.sales.toArray() },
-    async close(id, status, closedAt) { await db.sales.update(id, { status, closedAt }) },
+    async add(trade) { return db.trades.add(trade) },
+    async all() { return db.trades.toArray() },
+    async save(trade) {
+      if (trade.id === undefined) throw new Error('Ligne sans identifiant : utiliser add')
+      await db.trades.put(trade)
+    },
+    async remove(id) { await db.trades.delete(id) },
   }
 }
 

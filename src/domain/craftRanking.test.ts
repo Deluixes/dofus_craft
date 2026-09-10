@@ -32,11 +32,11 @@ describe('rankCrafts', () => {
     expect(ranked.map((r) => r.resultItemId)).toEqual([1, 4])
   })
 
-  it('calcule la marge en déduisant la taxe de 2 pourcent', () => {
+  it('calcule la marge en déduisant la taxe de 3 pourcent', () => {
     const prices: PriceBook = new Map([at(2, 100), at(1, 5000)])
     const { ranked } = rankCrafts(index, prices, { tailleur: 50 }, NOW)
-    // coût 1000, vente 5000, taxe 100 → 3900
-    expect(ranked[0].margin?.net).toBe(3900)
+    // coût 1000, vente 5000, taxe 150 → 3850
+    expect(ranked[0].margin?.net).toBe(3850)
   })
 
   it('sépare les crafts incalculables au lieu de les classer', () => {

@@ -4,7 +4,8 @@ import { AppStateProvider, useAppState } from './AppState'
 import { CraftsScreen } from './screens/CraftsScreen'
 import { CraftDetailScreen } from './screens/CraftDetailScreen'
 import { PricesScreen } from './screens/PricesScreen'
-import { SalesScreen } from './screens/SalesScreen'
+import { TradesScreen } from './screens/TradesScreen'
+import { LedgerScreen } from './screens/LedgerScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 
 function Shell() {
@@ -34,7 +35,8 @@ function Shell() {
         {tab === 'prices' && (
           <PricesScreen target={priceTarget} onTargetHandled={() => setPriceTarget(null)} />
         )}
-        {tab === 'sales' && <SalesScreen />}
+        {tab === 'sales' && <TradesScreen />}
+        {tab === 'ledger' && <LedgerScreen />}
         {tab === 'settings' && <SettingsScreen />}
       </main>
       <BottomNav active={tab} onChange={setTab} />
