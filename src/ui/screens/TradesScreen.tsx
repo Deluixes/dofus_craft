@@ -32,7 +32,7 @@ export function TradesScreen() {
 
   return (
     <section className="sales">
-      <dl className="sales__summary">
+      <dl className="sales__summary" aria-label="Résumé du négoce">
         <dt>Bénéfice réalisé</dt>
         <dd><KamasAmount value={summary.realizedProfit} signed /></dd>
         <dt>Capital immobilisé</dt>
