@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useAppState } from '../AppState'
 import { craftCost } from '../../domain/craftCost'
-import { craftMargin } from '../../domain/margin'
+import { craftMargin, HDV_TAX_PER_MILLE } from '../../domain/margin'
 import { unitPrice } from '../../domain/price'
 import { freshnessOf, worstFreshness } from '../../domain/freshness'
 import { averageJets, breakingValue } from '../../domain/breaking'
@@ -157,7 +157,7 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
           {simulating && <span className="detail__simulated">simulation, non enregistrée</span>}
         </dd>
 
-        <dt>Taxe 2 %</dt>
+        <dt>Taxe {HDV_TAX_PER_MILLE / 10} %</dt>
         <dd><KamasAmount value={margin?.tax ?? null} /></dd>
 
         <dt>Marge nette</dt>

@@ -48,13 +48,13 @@ describe('hoursUntilExpiry', () => {
 
 describe('realizedProfit', () => {
   it('déduit la taxe et le coût figé, multipliés par la quantité', () => {
-    // (10000 - 200 - 6000) × 5 = 19000
-    expect(realizedProfit(createSale(input, NOW))).toBe(19_000)
+    // (10000 - 6000) × 5 - 1500 de taxe = 18 500
+    expect(realizedProfit(createSale(input, NOW))).toBe(18_500)
   })
 
   it('peut être négatif si le coût dépasse le prix net', () => {
     const bad = createSale({ ...input, unitPrice: 5000 }, NOW)
-    expect(realizedProfit(bad)).toBe((5000 - 100 - 6000) * 5)
+    expect(realizedProfit(bad)).toBe((5000 - 6000) * 5 - 750)
   })
 
   // `quantity` est un nombre de LOTS : 5 lots de 10 valent 50 unités. Avant
@@ -63,12 +63,12 @@ describe('realizedProfit', () => {
   // — faux d'un facteur 100 sur de l'argent déjà gagné.
   it('multiplie par le nombre dunités, lots compris', () => {
     const parDix = createSale({ ...input, lotSize: 10 }, NOW)
-    expect(realizedProfit(parDix)).toBe((10_000 - 200 - 6000) * 50)   // 190 000
+    expect(realizedProfit(parDix)).toBe((10_000 - 6000) * 50 - 15_000)   // 185 000
   })
 
   it('rapporte cent fois plus en lots de cent quà lunité', () => {
     const parCent = createSale({ ...input, lotSize: 100 }, NOW)
-    expect(realizedProfit(parCent)).toBe(1_900_000)
+    expect(realizedProfit(parCent)).toBe(1_850_000)
     expect(realizedProfit(parCent)).toBe(realizedProfit(createSale(input, NOW)) * 100)
   })
 })

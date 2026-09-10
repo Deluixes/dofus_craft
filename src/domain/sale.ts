@@ -1,4 +1,4 @@
-import { saleTax } from './margin'
+import { listingTax } from './margin'
 import type { LotSize } from './types'
 import { HOUR_MS } from './freshness'
 
@@ -64,7 +64,10 @@ export function hoursUntilExpiry(sale: Sale, now: number): number {
  * rapportent 5 unités.
  */
 export function realizedProfit(sale: Sale): number {
-  return (sale.unitPrice - saleTax(sale.unitPrice) - sale.frozenCraftCost) * unitsSold(sale)
+  const units = unitsSold(sale)
+  // La taxe est arrondie une seule fois, sur le lot entier : l'arrondir par
+  // unité puis multiplier amplifierait l'erreur par le nombre d'unités.
+  return (sale.unitPrice - sale.frozenCraftCost) * units - listingTax(sale.unitPrice, units)
 }
 
 /** Kamas immobilisés dans les ventes en cours, coût unitaire × unités engagées. */

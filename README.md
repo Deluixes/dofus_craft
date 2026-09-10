@@ -6,7 +6,7 @@ Classement des crafts **Dofus Touch** par marge nette réelle, hors-ligne d'abor
 
 À un joueur artisan qui veut savoir, avant de lancer un craft, ce qu'il lui
 rapportera vraiment — coût des ingrédients aux prix qu'il a lui-même relevés,
-taxe de 2 % de l'hôtel des ventes déduite, et comparaison avec la valeur de
+taxe de 3 % de l'hôtel des ventes déduite, et comparaison avec la valeur de
 brisage.
 
 Dofus Touch n'expose aucune API de prix. Les prix sont donc **saisis à la

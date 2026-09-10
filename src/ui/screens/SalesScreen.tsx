@@ -1,6 +1,6 @@
 import { useAppState } from '../AppState'
 import { committedKamas, hoursUntilExpiry, realizedProfit, unitsSold, type Sale } from '../../domain/sale'
-import { saleTax } from '../../domain/margin'
+import { listingTax } from '../../domain/margin'
 import { KamasAmount } from '../components/KamasAmount'
 import { describeSaleSize } from '../components/lotLabel'
 
@@ -11,7 +11,7 @@ const ALERT_HOURS = 48
  * Écran Ventes : ce qui est encore à l'HDV et ce qui a été conclu.
  *
  * Une mise en vente dure 14 jours puis revient en banque invendue — la taxe
- * de 2 % payée à la mise en vente n'est pas remboursée, un retour est donc
+ * de 3 % payée à la mise en vente n'est pas remboursée, un retour est donc
  * une petite perte réelle, pas un non-événement. Le profit réalisé ne compte
  * donc que les ventes conclues (`status === 'sold'`), jamais les retours à
  * zéro ni une reconstitution aux prix du jour : `realizedProfit` s'appuie sur
@@ -118,7 +118,7 @@ function HistoryItem({ sale }: { sale: Sale }) {
           retourné en banque · taxe perdue{' '}
           {/* La taxe est payée à l'unité, sur toutes les unités engagées :
               même correction de facteur que `realizedProfit`. */}
-          <KamasAmount value={-saleTax(sale.unitPrice) * unitsSold(sale)} />
+          <KamasAmount value={-listingTax(sale.unitPrice, unitsSold(sale))} />
         </span>
       )}
     </li>
