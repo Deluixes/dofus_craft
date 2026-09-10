@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type { LotSize } from '../domain/types'
-import type { Sale } from '../domain/sale'
+import type { Trade } from '../domain/trade'
+import { saleToTrade, type LegacySale } from './legacySale'
 
 export interface CurrentPriceRow {
   itemId: number
@@ -16,7 +17,7 @@ export interface SettingRow { key: string; value: unknown }
 export class KrosmargeDB extends Dexie {
   currentPrices!: Table<CurrentPriceRow, number>
   priceHistory!: Table<PriceHistoryRow, number>
-  sales!: Table<Sale, number>
+  trades!: Table<Trade, number>
   settings!: Table<SettingRow, string>
 
   constructor(name = 'krosmarge') {
@@ -27,6 +28,22 @@ export class KrosmargeDB extends Dexie {
       sales: '++id, itemId, status, expiresAt',
       settings: 'key',
     })
+
+    /*
+     * La table `sales` est conservée telle quelle dans cette version, et n'est
+     * supprimée qu'à la suivante. C'est indispensable : Dexie applique le schéma
+     * AVANT d'exécuter `upgrade`, donc déclarer `sales: null` ici effacerait les
+     * ventes avant qu'on ait pu les lire.
+     */
+    this.version(2)
+      .stores({ trades: '++id, itemId, acquiredAt' })
+      .upgrade(async (tx) => {
+        const legacy = (await tx.table('sales').toArray()) as LegacySale[]
+        if (legacy.length === 0) return
+        await tx.table('trades').bulkAdd(legacy.map(saleToTrade))
+      })
+
+    this.version(3).stores({ sales: null })
   }
 }
 

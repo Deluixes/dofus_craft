@@ -4,6 +4,11 @@ import {
   remainingQuantity,
   lastAskPrice,
   tradeStatus,
+  createTrade,
+  withListing,
+  withSale,
+  withdrawn,
+  withoutMovement,
   type Movement,
   type Trade,
 } from './trade'
@@ -137,5 +142,57 @@ describe('tradeStatus', () => {
       withdrawnAt: day(15),
     })
     expect(tradeStatus(t)).toBe('withdrawn')
+  })
+})
+
+describe('mutations immuables', () => {
+  const listing: Movement = { id: 'L1', at: day(1), unitPrice: 2000, quantity: 10 }
+  const sale: Movement = { id: 'S1', at: day(2), unitPrice: 2000, quantity: 4 }
+
+  it('cree une ligne sans aucun mouvement', () => {
+    const t = createTrade(
+      { itemId: 7, origin: 'purchase', quantity: 10, unitCost: 1000, acquiredAt: day(0) },
+      day(0),
+    )
+    expect(t.listings).toEqual([])
+    expect(t.sales).toEqual([])
+    expect(tradeStatus(t)).toBe('inStock')
+  })
+
+  it('ajoute une mise en vente sans toucher a la ligne dorigine', () => {
+    const before = trade()
+    const after = withListing(before, listing)
+    expect(before.listings).toHaveLength(0)
+    expect(after.listings).toEqual([listing])
+  })
+
+  it('ajoute une vente sans toucher a la ligne dorigine', () => {
+    const before = trade()
+    const after = withSale(before, sale)
+    expect(before.sales).toHaveLength(0)
+    expect(after.sales).toEqual([sale])
+  })
+
+  it('enregistre un retrait', () => {
+    expect(withdrawn(withListing(trade(), listing), day(15)).withdrawnAt).toBe(day(15))
+  })
+
+  it('retire un mouvement quel que soit son bord', () => {
+    const t = withSale(withListing(trade(), listing), sale)
+    expect(withoutMovement(t, 'L1').listings).toHaveLength(0)
+    expect(withoutMovement(t, 'L1').sales).toHaveLength(1)
+    expect(withoutMovement(t, 'S1').sales).toHaveLength(0)
+  })
+
+  it('efface la taxe fantome dune remise en vente saisie par erreur', () => {
+    // Sans cette correction, une relance enregistree par megarde couterait une
+    // taxe que rien ne permettrait d'effacer.
+    const t = withListing(withListing(trade(), listing), { ...listing, id: 'L2', at: day(5) })
+    expect(withoutMovement(t, 'L2').listings.map((m) => m.id)).toEqual(['L1'])
+  })
+
+  it('ignore un identifiant inconnu', () => {
+    const t = withListing(trade(), listing)
+    expect(withoutMovement(t, 'inexistant')).toEqual(t)
   })
 })

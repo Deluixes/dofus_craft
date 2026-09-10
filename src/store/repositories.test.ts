@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
+import Dexie from 'dexie'
 import { KrosmargeDB } from './db'
-import { makePriceRepository, makeSaleRepository, makeSettingsRepository, DEFAULT_SETTINGS } from './repositories'
-import { createSale } from '../domain/sale'
+import { makePriceRepository, makeTradeRepository, makeSettingsRepository, DEFAULT_SETTINGS } from './repositories'
+import type { Trade } from '../domain/trade'
 
 let db: KrosmargeDB
 let seq = 0
@@ -36,22 +37,97 @@ describe('PriceRepository', () => {
   })
 })
 
-describe('SaleRepository', () => {
-  it('enregistre et relit les ventes en cours', async () => {
-    const repo = makeSaleRepository(db)
-    await repo.add(createSale({ itemId: 1, quantity: 2, lotSize: 1, unitPrice: 100, frozenCraftCost: 60 }, 1000))
-    expect(await repo.listed()).toHaveLength(1)
+describe('TradeRepository', () => {
+  const model: Trade = {
+    itemId: 1,
+    origin: 'purchase',
+    quantity: 10,
+    unitCost: 1000,
+    acquiredAt: 1000,
+    listings: [],
+    sales: [],
+    createdAt: 1000,
+  }
+
+  it('enregistre et relit une ligne', async () => {
+    const repo = makeTradeRepository(db)
+    await repo.add({ ...model })
+    const all = await repo.all()
+    expect(all).toHaveLength(1)
+    expect(all[0]).toMatchObject({ itemId: 1, quantity: 10, unitCost: 1000 })
   })
 
-  it('sépare les ventes closes des ventes en cours', async () => {
-    const repo = makeSaleRepository(db)
-    const id = await repo.add(createSale({ itemId: 1, quantity: 2, lotSize: 1, unitPrice: 100, frozenCraftCost: 60 }, 1000))
-    await repo.close(id, 'sold', 5000)
+  it('persiste les mouvements embarqués', async () => {
+    const repo = makeTradeRepository(db)
+    const id = await repo.add({ ...model })
+    const stored = (await repo.all())[0]
+    await repo.save({
+      ...stored,
+      listings: [{ id: 'a', at: 2000, unitPrice: 2000, quantity: 10 }],
+      sales: [{ id: 'b', at: 3000, unitPrice: 2000, quantity: 4 }],
+    })
 
-    expect(await repo.listed()).toHaveLength(0)
-    const all = await repo.all()
-    expect(all[0].status).toBe('sold')
-    expect(all[0].closedAt).toBe(5000)
+    const reloaded = (await repo.all())[0]
+    expect(reloaded.id).toBe(id)
+    expect(await repo.all()).toHaveLength(1)
+    expect(reloaded.listings).toHaveLength(1)
+    expect(reloaded.sales[0]).toMatchObject({ at: 3000, quantity: 4 })
+  })
+
+  it('supprime une ligne saisie par erreur', async () => {
+    const repo = makeTradeRepository(db)
+    const id = await repo.add({ ...model })
+    await repo.remove(id)
+    expect(await repo.all()).toHaveLength(0)
+  })
+
+  it('refuse denregistrer une ligne sans identifiant', async () => {
+    // Sans ce garde-fou, `put` creerait une seconde ligne au lieu de mettre a
+    // jour la premiere, et le bilan compterait l'operation deux fois.
+    await expect(makeTradeRepository(db).save({ ...model })).rejects.toThrow(/identifiant/i)
+  })
+})
+
+describe('migration depuis lancienne table des ventes', () => {
+  it('convertit les ventes v1 en lignes de négoce et supprime lancienne table', async () => {
+    /*
+     * On ouvre une base au schema v1, on y ecrit une vente, puis on rouvre la
+     * MEME base avec le schema courant. C'est le seul moyen d'exercer
+     * reellement l'upgrade Dexie plutot que de faire confiance a la lecture du
+     * code - et c'est le seul chemin capable de detruire des donnees.
+     */
+    const name = `migration-${seq++}`
+    const legacy = new Dexie(name)
+    legacy.version(1).stores({
+      currentPrices: 'itemId',
+      priceHistory: '++id, itemId, observedAt',
+      sales: '++id, itemId, status, expiresAt',
+      settings: 'key',
+    })
+    await legacy.open()
+    await legacy.table('sales').add({
+      itemId: 42, quantity: 5, lotSize: 10, unitPrice: 2000,
+      listedAt: 1000, expiresAt: 99_000, status: 'sold', closedAt: 50_000,
+      frozenCraftCost: 1000,
+    })
+    legacy.close()
+
+    const upgraded = new KrosmargeDB(name)
+    await upgraded.open()
+    const trades = await upgraded.trades.toArray()
+    expect(trades).toHaveLength(1)
+    expect(trades[0]).toMatchObject({ itemId: 42, quantity: 50, unitCost: 1000, origin: 'craft' })
+    expect(trades[0].sales[0]).toMatchObject({ at: 50_000, quantity: 50 })
+    expect(upgraded.tables.map((t) => t.name)).not.toContain('sales')
+    upgraded.close()
+  })
+
+  it('ouvre une base neuve directement au schéma courant', async () => {
+    const fresh = new KrosmargeDB(`fresh-${seq++}`)
+    await fresh.open()
+    expect(await fresh.trades.toArray()).toEqual([])
+    expect(fresh.tables.map((t) => t.name)).not.toContain('sales')
+    fresh.close()
   })
 })
 

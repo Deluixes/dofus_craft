@@ -17,11 +17,12 @@ import type { ReactNode } from 'react'
  * ici, la teinte vient de la règle CSS qui porte l'icône.
  */
 
-/** Les quatre onglets, puis les quatre niveaux de fraîcheur. */
+/** Les cinq onglets, puis les quatre niveaux de fraîcheur. */
 export type IconName =
   | 'crafts'
   | 'prices'
   | 'sales'
+  | 'ledger'
   | 'settings'
   | 'fresh'
   | 'stale'
@@ -71,6 +72,17 @@ const GLYPHS: Record<IconName, Glyph> = {
       </>
     ),
   },
+  // Courbe ascendante : l'évolution du bénéfice dans le temps.
+  ledger: {
+    body: (
+      <>
+        <path d="M3 3v16.5a1.5 1.5 0 0 0 1.5 1.5H21" />
+        <path d="M7 15l4-4.5 3.2 3 4.8-6" />
+        <path d="M15.4 7.5H19V11" />
+      </>
+    ),
+  },
+
   /*
    * Engrenage à huit dents. Le contour a été calculé (rayon de tête 9,6,
    * rayon de pied 6,9, dent de 26°) plutôt que recopié : à trait de 2 les

@@ -5,7 +5,7 @@ import { craftMargin, HDV_TAX_PER_MILLE } from '../../domain/margin'
 import { unitPrice } from '../../domain/price'
 import { freshnessOf, worstFreshness } from '../../domain/freshness'
 import { averageJets, breakingValue } from '../../domain/breaking'
-import { createSale } from '../../domain/sale'
+import { startOfToday } from '../clock'
 import { RUNES, STAT_WEIGHTS, type RuneRef } from '../../catalog/statWeights'
 import { KamasAmount, formatKamas } from '../components/KamasAmount'
 import { FreshnessDot } from '../components/FreshnessDot'
@@ -26,7 +26,7 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
   onClose: () => void
   onEditPrice: (itemId: number) => void
 }) {
-  const { catalog, priceBook, settings, addSale } = useAppState()
+  const { catalog, priceBook, settings, addTrade } = useAppState()
   const item = catalog!.itemsById.get(itemId)
   const recipe = catalog!.recipeByResultId.get(itemId)
 
@@ -199,11 +199,11 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
         <h2>J'ai crafté et mis en vente</h2>
         <LotSelector value={saleLot} onChange={setSaleLot} />
         {/*
-          `saleQty` compte des LOTS, pas des unités (voir `unitsSold` dans
-          domain/sale.ts). Le libellé le dit, et le récapitulatif ci-dessous
-          affiche le total d'unités : sans lui, « 5 » à côté d'un sélecteur
-          ×100 se lit dans les deux sens, et l'écart est d'un facteur 100 sur
-          le profit annoncé.
+          `saleQty` compte des LOTS, pas des unités. Le libellé le dit, et le
+          récapitulatif ci-dessous affiche le total d'unités : sans lui, « 5 »
+          à côté d'un sélecteur ×100 se lit dans les deux sens, et l'écart est
+          d'un facteur 100 sur le profit annoncé. Le registre de négoce, lui,
+          ne connaît que des unités — la conversion se fait ici, une fois.
         */}
         <label className="detail__sale-label" htmlFor="detail-lot-count">Nombre de lots</label>
         <input
@@ -220,16 +220,22 @@ export function CraftDetailScreen({ itemId, onClose, onEditPrice }: {
           type="button"
           disabled={cost.total === null || effectiveSalePrice === null}
           onClick={() => {
-            void addSale(createSale({
-              itemId,
-              quantity: saleQty,
-              lotSize: saleLot,
-              unitPrice: effectiveSalePrice!,
-              frozenCraftCost: cost.total!,
-            }, Date.now()))
+            const units = saleQty * saleLot
+            void addTrade(
+              {
+                itemId,
+                origin: 'craft',
+                quantity: units,
+                // Le coût de craft du jour est FIGÉ ici : recalculer un profit
+                // passé avec les prix d'aujourd'hui donnerait un chiffre faux.
+                unitCost: cost.total!,
+                acquiredAt: startOfToday(),
+              },
+              { unitPrice: effectiveSalePrice!, quantity: units },
+            )
           }}
         >
-          Enregistrer la vente
+          Enregistrer la mise en vente
         </button>
       </section>
     </section>

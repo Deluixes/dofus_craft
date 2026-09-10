@@ -4,45 +4,53 @@ import type { CatalogIndex } from '../catalog/types'
 import { db } from '../store/db'
 import {
   makePriceRepository,
-  makeSaleRepository,
+  makeTradeRepository,
   makeSettingsRepository,
   DEFAULT_SETTINGS,
   type AppSettings,
 } from '../store/repositories'
 import type { PriceBook, LotSize } from '../domain/types'
-import type { Sale } from '../domain/sale'
+import type { Movement, NewTradeInput, Trade } from '../domain/trade'
+import { createTrade, withListing, withSale, withdrawn, withoutMovement } from '../domain/trade'
 
 const prices = makePriceRepository(db)
-const sales = makeSaleRepository(db)
+const trades = makeTradeRepository(db)
 const settingsRepo = makeSettingsRepository(db)
 
 interface AppStateValue {
   catalog: CatalogIndex | null
   priceBook: PriceBook
   settings: AppSettings
-  saleList: Sale[]
+  tradeList: Trade[]
   error: string | null
   recordPrice(itemId: number, kamas: number, lotSize: LotSize): Promise<void>
   saveSettings(next: AppSettings): Promise<void>
-  addSale(sale: Sale): Promise<void>
-  refreshSales(): Promise<void>
-  closeSale(id: number, status: 'sold' | 'returned'): Promise<void>
+  /** `listing` non nul met la ligne en vente dans la foulée, taxe comprise. */
+  addTrade(input: NewTradeInput, listing?: { unitPrice: number; quantity: number } | null): Promise<void>
+  removeTrade(id: number): Promise<void>
+  listTrade(id: number, unitPrice: number, quantity: number, at: number): Promise<void>
+  sellTrade(id: number, unitPrice: number, quantity: number, at: number): Promise<void>
+  withdrawTrade(id: number, at: number): Promise<void>
+  dropMovement(id: number, movementId: string): Promise<void>
+  refreshTrades(): Promise<void>
 }
 
 const Ctx = createContext<AppStateValue | null>(null)
 
 /**
- * État partagé de l'application : catalogue, prix relevés, réglages et ventes.
+ * État partagé de l'application : catalogue, prix relevés, réglages et registre
+ * de négoce.
  *
- * C'est ici — et nulle part dans `domain/` — que l'horloge est lue. Le domaine
- * reçoit toujours un instant en paramètre, ce qui le laisse testable sans
- * geler le temps.
+ * C'est ici — et nulle part dans `domain/` — que l'horloge est lue et que les
+ * identifiants de mouvement sont engendrés. Le domaine reçoit toujours un
+ * instant et un identifiant en paramètre, ce qui le laisse testable sans geler
+ * le temps ni simuler `crypto`.
  */
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [catalog, setCatalog] = useState<CatalogIndex | null>(null)
   const [priceBook, setPriceBook] = useState<PriceBook>(new Map())
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
-  const [saleList, setSaleList] = useState<Sale[]>([])
+  const [tradeList, setTradeList] = useState<Trade[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -51,18 +59,30 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setCatalog(await loadCatalog())
         setPriceBook(await prices.loadPriceBook())
         setSettings(await settingsRepo.load())
-        setSaleList(await sales.all())
+        setTradeList(await trades.all())
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Chargement impossible')
       }
     })()
   }, [])
 
+  /** Applique une transformation pure à une ligne, puis la persiste. */
+  async function mutate(id: number, change: (trade: Trade) => Trade): Promise<void> {
+    const current = (await trades.all()).find((t) => t.id === id)
+    if (current === undefined) return
+    await trades.save(change(current))
+    setTradeList(await trades.all())
+  }
+
+  function movement(unitPrice: number, quantity: number, at: number): Movement {
+    return { id: crypto.randomUUID(), at, unitPrice, quantity }
+  }
+
   const value: AppStateValue = {
     catalog,
     priceBook,
     settings,
-    saleList,
+    tradeList,
     error,
     async recordPrice(itemId, kamas, lotSize) {
       await prices.record({ itemId, kamas, lotSize, observedAt: Date.now() })
@@ -72,16 +92,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       await settingsRepo.save(next)
       setSettings(next)
     },
-    async addSale(sale) {
-      await sales.add(sale)
-      setSaleList(await sales.all())
+    async addTrade(input, listing = null) {
+      const now = Date.now()
+      let trade = createTrade(input, now)
+      if (listing !== null) {
+        trade = withListing(trade, movement(listing.unitPrice, listing.quantity, input.acquiredAt))
+      }
+      await trades.add(trade)
+      setTradeList(await trades.all())
     },
-    async refreshSales() {
-      setSaleList(await sales.all())
+    async removeTrade(id) {
+      await trades.remove(id)
+      setTradeList(await trades.all())
     },
-    async closeSale(id, status) {
-      await sales.close(id, status, Date.now())
-      setSaleList(await sales.all())
+    async listTrade(id, unitPrice, quantity, at) {
+      await mutate(id, (t) => withListing(t, movement(unitPrice, quantity, at)))
+    },
+    async sellTrade(id, unitPrice, quantity, at) {
+      await mutate(id, (t) => withSale(t, movement(unitPrice, quantity, at)))
+    },
+    async withdrawTrade(id, at) {
+      await mutate(id, (t) => withdrawn(t, at))
+    },
+    async dropMovement(id, movementId) {
+      await mutate(id, (t) => withoutMovement(t, movementId))
+    },
+    async refreshTrades() {
+      setTradeList(await trades.all())
     },
   }
 

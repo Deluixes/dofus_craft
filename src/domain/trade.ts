@@ -114,3 +114,52 @@ export function tradeStatus(trade: Trade): TradeStatus {
   if (trade.listings.length > 0) return 'listed'
   return 'inStock'
 }
+
+export interface NewTradeInput {
+  itemId: number
+  origin: TradeOrigin
+  quantity: number
+  unitCost: number
+  /** Minuit local du jour saisi : c'est ce que le regroupement par période relit. */
+  acquiredAt: number
+  note?: string
+}
+
+/*
+ * Les fonctions ci-dessous sont toutes IMMUABLES : elles rendent une nouvelle
+ * ligne au lieu de modifier celle qu'on leur passe.
+ *
+ * Ni l'horloge ni la génération d'identifiants n'apparaissent ici. Comme
+ * partout dans `domain/`, l'instant courant et les identifiants de mouvement
+ * sont fournis par l'appelant, ce qui laisse chaque règle testable sans avoir
+ * à geler le temps ni à simuler `crypto`.
+ */
+
+export function createTrade(input: NewTradeInput, createdAt: number): Trade {
+  return { ...input, listings: [], sales: [], createdAt }
+}
+
+export function withListing(trade: Trade, listing: Movement): Trade {
+  return { ...trade, listings: [...trade.listings, listing] }
+}
+
+export function withSale(trade: Trade, sale: Movement): Trade {
+  return { ...trade, sales: [...trade.sales, sale] }
+}
+
+export function withdrawn(trade: Trade, at: number): Trade {
+  return { ...trade, withdrawnAt: at }
+}
+
+/**
+ * Retire un mouvement, quel que soit son bord. Sert à corriger une saisie :
+ * sans elle, une remise en vente enregistrée par erreur coûterait une taxe
+ * fantôme que rien ne permettrait d'effacer.
+ */
+export function withoutMovement(trade: Trade, movementId: string): Trade {
+  return {
+    ...trade,
+    listings: trade.listings.filter((m) => m.id !== movementId),
+    sales: trade.sales.filter((m) => m.id !== movementId),
+  }
+}

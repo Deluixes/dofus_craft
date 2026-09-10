@@ -1705,3 +1705,679 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================== Négoce ====
+   L'écran Négoce réutilise les classes .sales* et .sale-card* : c'est le même
+   écran, enrichi. Seul ce qui est nouveau est défini ici. */
+
+/* La carte entière devient cliquable : sur un téléphone, viser une petite
+   chevron au pouce est un mauvais geste. Le bouton se dépouille donc de tout
+   style natif pour laisser la carte parler. */
+.sale-card__open {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Action principale de l'écran, ancrée dans le tiers atteignable au pouce,
+   juste au-dessus de la barre d'onglets. */
+.sales__add {
+  position: fixed;
+  right: var(--k-gap);
+  bottom: calc(var(--k-tap-min) + var(--k-gap) * 2 + env(safe-area-inset-bottom, 0px));
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 6px 20px var(--k-accent-glow);
+}
+
+/* ------------------------------------------------------- Choix d'un objet */
+
+.item-picker,
+.item-picker__chosen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+}
+
+.item-picker__chosen {
+  flex-direction: row;
+  align-items: center;
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.item-picker__input {
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  /* 16 px au moins : en deçà, Safari et Chrome mobile zooment sur le champ. */
+  font-size: 1rem;
+}
+
+.item-picker__results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 46vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.item-picker__option {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  width: 100%;
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight);
+  border: 0;
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.item-picker__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.item-picker__meta {
+  flex: none;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+}
+
+.item-picker__clear {
+  flex: none;
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap-tight);
+  border: 0;
+  background: transparent;
+  color: var(--k-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.item-picker__empty {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* ------------------------------------------------------ Saisie et détail */
+
+.trade-form,
+.trade-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+.trade-form__head,
+.trade-detail__head {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+}
+
+.trade-form__head h1,
+.trade-detail__head h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.trade-form__close,
+.trade-detail__close {
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: transparent;
+  color: var(--k-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.trade-form__field,
+.trade-detail__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trade-form__field > span,
+.trade-detail__form label > span {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.trade-form__field input,
+.trade-detail__form input,
+.trade-form__recipe input {
+  min-height: var(--k-tap-min);
+  padding: var(--k-gap-tight) var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font-size: 1rem;
+}
+
+.trade-form__origin {
+  display: flex;
+  gap: var(--k-gap-tight);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.trade-form__origin legend {
+  padding: 0 0 4px;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.trade-form__origin button,
+.ledger__granularity button {
+  flex: 1;
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text-muted);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.trade-form__origin button[aria-pressed="true"],
+.ledger__granularity button[aria-pressed="true"] {
+  border-color: var(--k-accent);
+  background: var(--k-accent-glow);
+  color: var(--k-accent);
+}
+
+.trade-form__check {
+  display: flex;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  min-height: var(--k-tap-min);
+}
+
+.trade-form__check input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--k-accent);
+}
+
+.trade-form__recipe {
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.trade-form__recipe h2 {
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+}
+
+.trade-form__hint,
+.trade-form__recipe-total {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.trade-form__recipe ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  margin: var(--k-gap-tight) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-form__recipe li {
+  display: grid;
+  grid-template-columns: 1fr auto 7rem;
+  align-items: center;
+  gap: var(--k-gap-tight);
+}
+
+.trade-form__ing-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+.trade-form__ing-qty {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.trade-form__recipe-total button {
+  min-height: 32px;
+  margin-left: var(--k-gap-tight);
+  padding: 0 var(--k-gap-tight);
+  border: 1px solid var(--k-accent);
+  border-radius: var(--k-radius);
+  background: transparent;
+  color: var(--k-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.trade-form__preview {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px var(--k-gap);
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  font-size: 0.875rem;
+}
+
+.trade-form__preview dt {
+  color: var(--k-text-muted);
+}
+
+.trade-form__preview dd {
+  margin: 0;
+  text-align: right;
+}
+
+.trade-form__save,
+.trade-detail__form button[type="submit"] {
+  min-height: 52px;
+  border: 0;
+  border-radius: var(--k-radius);
+  background: var(--k-accent);
+  color: var(--k-accent-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.trade-form__save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* -------------------------------------------------------------- Détail --- */
+
+.trade-detail__meta {
+  margin: 2px 0 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.trade-detail__figures {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px var(--k-gap);
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.trade-detail__figures dt {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.trade-detail__figures dd {
+  margin: 0;
+  text-align: right;
+}
+
+.trade-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--k-gap-tight);
+}
+
+.trade-detail__actions button {
+  flex: 1 1 30%;
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+  color: var(--k-text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.trade-detail__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap-tight);
+  padding: var(--k-gap);
+  border: 1px solid var(--k-accent);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.trade-detail__form h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.trade-detail__form-actions {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+.trade-detail__form-actions button {
+  flex: 1;
+}
+
+.trade-detail__form-actions button[type="button"] {
+  min-height: var(--k-tap-min);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: transparent;
+  color: var(--k-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* La taxe est annoncée AVANT confirmation : c'est de l'argent prélevé
+   immédiatement et jamais remboursé, le joueur doit le savoir avant de valider. */
+.trade-detail__tax-warning {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.trade-detail__heading,
+.ledger__heading {
+  margin: var(--k-gap-tight) 0 0;
+  font-size: 1rem;
+}
+
+.trade-detail__empty,
+.ledger__empty {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.875rem;
+}
+
+.trade-detail__movements {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-detail__movements li {
+  display: grid;
+  grid-template-columns: auto 1fr auto var(--k-tap-min);
+  align-items: center;
+  gap: var(--k-gap-tight);
+  padding: var(--k-gap-tight);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+  font-size: 0.8125rem;
+}
+
+.trade-detail__movement-tax {
+  color: var(--k-text-muted);
+}
+
+.trade-detail__movements button {
+  min-height: var(--k-tap-min);
+  border: 0;
+  background: transparent;
+  color: var(--k-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.trade-detail__danger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--k-gap-tight);
+  margin-top: var(--k-gap);
+  padding-top: var(--k-gap);
+  border-top: 1px solid var(--k-border);
+}
+
+.trade-detail__danger p {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.875rem;
+}
+
+.trade-detail__danger button {
+  min-height: var(--k-tap-min);
+  padding: 0 var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: transparent;
+  color: var(--k-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.trade-detail__delete {
+  border-color: var(--k-negative);
+  color: var(--k-negative);
+}
+
+/* =============================================================== Bilan ==== */
+
+.ledger {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-gap);
+}
+
+.ledger__figures {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px var(--k-gap);
+  margin: 0;
+  padding: var(--k-gap);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  background: var(--k-surface);
+}
+
+.ledger__figures dt {
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+}
+
+.ledger__figures dd {
+  margin: 0;
+  text-align: right;
+}
+
+.ledger__granularity {
+  display: flex;
+  gap: var(--k-gap-tight);
+}
+
+.ledger__dormant,
+.ledger__ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ledger__dormant li,
+.ledger__ranking li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--k-gap);
+  padding: var(--k-gap-tight);
+  border-radius: calc(var(--k-radius) - 6px);
+  background: var(--k-surface);
+}
+
+.ledger__dormant-name,
+.ledger__ranking-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ledger__dormant-age,
+.ledger__ranking-meta {
+  grid-column: 1;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+}
+
+.ledger__dormant li > [data-tone],
+.ledger__ranking li > [data-tone] {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+}
+
+.ledger__note {
+  margin: 0;
+  color: var(--k-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ========================================================== Graphiques ==== */
+
+.graph {
+  margin: 0;
+}
+
+.graph__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+/* Grille et axes volontairement effacés : ce sont des repères, pas la donnée. */
+.graph__grid {
+  stroke: var(--k-border);
+  stroke-width: 1;
+  opacity: 0.35;
+}
+
+.graph__zero {
+  stroke: var(--k-border-strong);
+  stroke-width: 1;
+}
+
+.graph__crosshair {
+  stroke: var(--k-border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.graph__tick,
+.graph__axis {
+  fill: var(--k-text-muted);
+  font-size: 8px;
+}
+
+.graph__line {
+  fill: none;
+  stroke: var(--k-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.graph__area {
+  fill: var(--k-accent-glow);
+  stroke: none;
+}
+
+.graph__last {
+  fill: var(--k-accent);
+  /* Anneau de la couleur du fond : le marqueur reste détaché de la courbe même
+     là où elle se replie sur elle-même. */
+  stroke: var(--k-bg);
+  stroke-width: 2;
+}
+
+.graph__bar[data-tone="positive"] {
+  fill: var(--k-positive);
+}
+
+.graph__bar[data-tone="negative"] {
+  fill: var(--k-negative);
+}
+
+.graph__bar[data-active="true"] {
+  stroke: var(--k-text);
+  stroke-width: 1.5;
+}
+
+.graph__caption,
+.graph__empty {
+  margin: var(--k-gap-tight) 0 0;
+  color: var(--k-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.graph__caption strong {
+  color: var(--k-text);
+}
