@@ -102,8 +102,9 @@ describe('surveyPriority', () => {
   })
 
   it('exclut un ingrédient absent du catalogue', () => {
-    // Régression : 147 ingrédients du dataset Touch référencent un identifiant
-    // sans objet correspondant. Empilés dans la file, ils y arrivaient sans nom
+    // Régression : dix ingrédients du dataset Touch référencent un identifiant
+    // sans objet correspondant — ils étaient 147 avant l'ajout des familiers et
+    // des montures au catalogue. Empilés dans la file, ils y arrivaient sans nom
     // ni image — l'écran de relevé n'avait alors plus rien à afficher, ni
     // aucun bouton, et le joueur s'y retrouvait enfermé. Sur le catalogue réel,
     // l'item 3955 occupait la position 10 sur 12 pour un Alchimiste maxé.
