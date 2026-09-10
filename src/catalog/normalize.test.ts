@@ -90,4 +90,10 @@ describe('normalizeItem', () => {
   it('traite un niveau non numérique comme 0', () => {
     expect(normalizeItem({ ...raw, lvl: '' }).item.level).toBe(0)
   })
+
+  it('accepte un niveau déjà numérique', () => {
+    // Cas réel : mount.json porte `"lvl": 60` là où les cinq autres fichiers
+    // sources écrivent `"lvl": "60"`.
+    expect(normalizeItem({ ...raw, lvl: 60 }).item.level).toBe(60)
+  })
 })

@@ -8,14 +8,22 @@ export interface RawItem {
   _id: number
   name: string
   type: string
-  lvl: string
+  /**
+   * Chaîne dans cinq des six fichiers sources, **nombre** dans `mount.json`.
+   * Le type dit ici la vérité du dataset plutôt que le cas majoritaire : les
+   * fichiers sont lus via `JSON.parse(...) as RawItem[]`, donc un typage trop
+   * étroit ne provoquerait aucune erreur de compilation — il masquerait
+   * simplement la divergence jusqu'au premier comportement inattendu.
+   */
+  lvl: string | number
   imgUrl: string
   stats?: RawStatEntry[]
   recipe?: RawRecipeEntry[]
 }
 
-function toInt(value: string | undefined): number | null {
+function toInt(value: string | number | undefined): number | null {
   if (value === undefined) return null
+  if (typeof value === 'number') return Number.isFinite(value) ? Math.trunc(value) : null
   const parsed = Number.parseInt(value, 10)
   return Number.isNaN(parsed) ? null : parsed
 }
